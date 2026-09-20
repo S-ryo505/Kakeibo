@@ -1,0 +1,19 @@
+{
+  "name": "おうち家計簿",
+  "short_name": "家計簿",
+  "description": "カード・銀行の明細から、費目べつの支出と収支をまとめて見える化する家計簿",
+  "lang": "ja",
+  "dir": "ltr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FFF6FA",
+  "theme_color": "#FFF6FA",
+  "categories": ["finance", "productivity"],
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

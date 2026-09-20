@@ -1,0 +1,2246 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#FFF6FA">
+<title>おうち家計簿</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="application-name" content="おうち家計簿">
+<meta name="apple-mobile-web-app-title" content="おうち家計簿">
+<style>
+:root{
+  --paper:#FFF6FA; --card:#FFFFFF; --ink:#463349; --ink2:#8A7791; --line:#F0E0E9;
+  --berry:#EF6FA4; --berry-d:#D94B87; --mint:#5FCFB8; --butter:#FFC94D;
+  --lilac:#A98FE0; --sky:#66B8E8; --coral:#FF9270; --sage:#9BCB6B; --grape:#C97BC4;
+  --shadow:0 2px 0 #F3DCE8, 0 8px 20px -10px rgba(160,110,140,.35);
+  --r:18px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  background:var(--paper);
+  background-image:radial-gradient(circle at 12% 8%,#FFE9F3 0,transparent 38%),
+                   radial-gradient(circle at 88% 22%,#E7F6FF 0,transparent 34%),
+                   radial-gradient(circle at 50% 96%,#F1EAFF 0,transparent 42%);
+  background-attachment:fixed;
+  color:var(--ink);
+  font-family:"Hiragino Maru Gothic ProN","M PLUS Rounded 1c","Quicksand",
+              "Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic",sans-serif;
+  font-size:15px;line-height:1.65;
+  padding-bottom:calc(78px + env(safe-area-inset-bottom));
+  -webkit-text-size-adjust:100%;
+}
+.wrap{max-width:520px;margin:0 auto;padding:0 14px}
+h1,h2,h3{margin:0;font-weight:800;letter-spacing:.02em}
+
+/* ---------- header ---------- */
+.top{padding:16px 0 8px;display:flex;align-items:center;gap:10px}
+.logo{font-size:19px;font-weight:800}
+.logo .dot{color:var(--berry)}
+.msel{margin-left:auto;display:flex;align-items:center;gap:6px}
+.msel button{width:34px;height:34px;border-radius:50%;border:none;background:#fff;
+  box-shadow:var(--shadow);color:var(--berry-d);font-size:16px;font-weight:800}
+.msel .lab{font-weight:800;font-size:15px;min-width:96px;text-align:center}
+
+/* ---------- cards ---------- */
+.card{background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);
+  padding:16px;margin-bottom:14px;border:1px solid #FBEBF3}
+.card h2{font-size:14px;color:var(--ink2);display:flex;align-items:center;gap:7px;margin-bottom:12px}
+.card h2 .ic{width:24px;height:24px;border-radius:9px;display:grid;place-items:center;font-size:13px}
+
+/* ---------- hero ---------- */
+.hero{background:linear-gradient(150deg,#FF9CC4 0%,#EF6FA4 45%,#B98BE6 100%);
+  color:#fff;border:none;position:relative;overflow:hidden}
+.hero:after{content:"";position:absolute;right:-38px;top:-46px;width:150px;height:150px;
+  border-radius:50%;background:rgba(255,255,255,.16)}
+.hero .lbl{font-size:12px;opacity:.9;font-weight:700}
+.hero .big{font-size:38px;font-weight:800;line-height:1.1;letter-spacing:-.02em}
+.hero .big small{font-size:17px;margin-left:3px;font-weight:700}
+.hero .sub{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;position:relative;z-index:1}
+.chip{background:rgba(255,255,255,.24);border-radius:999px;padding:5px 11px;font-size:12px;font-weight:700}
+.chip.warn{background:#fff;color:var(--berry-d)}
+
+/* gauge */
+.gauge{height:9px;border-radius:99px;background:rgba(255,255,255,.3);margin-top:13px;overflow:hidden;position:relative;z-index:1}
+.gauge i{display:block;height:100%;border-radius:99px;background:#fff;transition:width .5s cubic-bezier(.3,1.3,.5,1)}
+.gauge.over i{background:#FFE066}
+
+/* ---------- tabs ---------- */
+nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:60;
+  background:rgba(255,255,255,.94);backdrop-filter:blur(12px);
+  border-top:1px solid var(--line);padding:7px 6px calc(7px + env(safe-area-inset-bottom))}
+nav.tabs .in{max-width:520px;margin:0 auto;display:grid;grid-template-columns:repeat(6,1fr);gap:2px}
+nav.tabs button{border:none;background:none;padding:6px 1px;border-radius:12px;
+  font:inherit;font-size:9.5px;font-weight:700;color:var(--ink2);display:grid;
+  justify-items:center;gap:3px;min-height:48px}
+nav.tabs button .e{font-size:18px;line-height:1}
+nav.tabs button.on{background:#FFEFF6;color:var(--berry-d)}
+section.page{display:none}
+section.page.on{display:block;animation:fade .25s ease}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* ---------- bars ---------- */
+.catrow{display:flex;align-items:center;gap:9px;padding:7px 0;cursor:pointer}
+.catrow .nm{font-size:13px;font-weight:700;width:88px;flex:none;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap}
+.catrow .track{flex:1;height:15px;background:#F7F1F5;border-radius:99px;overflow:hidden;position:relative}
+.catrow .track i{display:block;height:100%;border-radius:99px;transition:width .5s}
+.catrow .track .bm{position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--ink2);opacity:.55}
+.catrow .amt{font-size:12.5px;font-weight:800;width:70px;text-align:right;flex:none;
+  font-variant-numeric:tabular-nums}
+.catrow .pct{font-size:10.5px;color:var(--ink2);width:34px;text-align:right;flex:none}
+
+/* ---------- calendar ---------- */
+.calm{margin-bottom:14px}
+.calm .t{font-size:12px;font-weight:800;color:var(--ink2);margin-bottom:6px}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.cal .h{font-size:9.5px;text-align:center;color:var(--ink2);font-weight:700}
+.cal .d{aspect-ratio:1;border-radius:10px;background:#FAF4F8;display:grid;
+  place-content:center;position:relative;font-size:10px;color:#BCA9B8;font-weight:700}
+.cal .d.has{color:#fff}
+.cal .d.sel{outline:2.5px solid var(--berry-d);outline-offset:1px}
+.cal .d .v{font-size:8px;font-weight:800;opacity:.95;line-height:1}
+.legend{display:flex;align-items:center;gap:5px;justify-content:flex-end;margin-top:8px;
+  font-size:10px;color:var(--ink2)}
+.legend b{width:13px;height:13px;border-radius:4px;display:inline-block}
+
+/* ---------- list ---------- */
+.tx{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px dashed var(--line)}
+.tx:last-child{border-bottom:none}
+.tx .cc{width:9px;height:34px;border-radius:99px;flex:none}
+.tx .mid{flex:1;min-width:0}
+.tx .nm{font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tx .mt{font-size:10.5px;color:var(--ink2);display:flex;gap:6px;flex-wrap:wrap}
+.tx .am{font-size:14px;font-weight:800;font-variant-numeric:tabular-nums;flex:none}
+.tag{background:#F7EFF5;border-radius:99px;padding:1px 7px;font-size:9.5px;font-weight:700}
+.tag.sp{background:#FFF0DC;color:#C08300}
+.tag.fx{background:#E6F4FF;color:#2C7CB8}
+.tag.cash{background:#E8F8F0;color:#279B6E}
+.tag.fixed{background:#F0EAFB;color:#7A5BC0}
+.tag.exp{background:#E3EEFB;color:#2A6099}
+.tag.bank{background:#EAF3EC;color:#3A7A52}
+.bal{border-radius:16px;padding:15px;color:#fff;position:relative;overflow:hidden}
+.bal.plus{background:linear-gradient(140deg,#6FD3C0,#3FAE97)}
+.bal.minus{background:linear-gradient(140deg,#FF9C8F,#E8615C)}
+.bal.unknown{background:linear-gradient(140deg,#C9BCCE,#9C8CA6)}
+.bal .lbl{font-size:12px;font-weight:700;opacity:.92}
+.bal .big{font-size:34px;font-weight:800;line-height:1.15}
+.bal .big small{font-size:16px;margin-left:3px}
+.ie{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:11px}
+.ie div{background:#FBF5F9;border-radius:13px;padding:10px;text-align:center}
+.ie .v{font-size:17px;font-weight:800;font-variant-numeric:tabular-nums}
+.ie .k{font-size:10px;color:var(--ink2);font-weight:700}
+.tx.isexp{opacity:.5}
+.tx.isexp .am{text-decoration:line-through}
+.tx .ck{width:24px;height:24px;flex:none;accent-color:#EF6FA4;margin:0}
+.selbar{position:fixed;left:0;right:0;bottom:calc(70px + env(safe-area-inset-bottom));z-index:70;
+  background:#fff;border-top:1px solid var(--line);padding:10px 14px;
+  box-shadow:0 -6px 18px -8px rgba(160,110,140,.4)}
+.selbar .in{max-width:520px;margin:0 auto}
+.selbar .r{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:7px}
+.dn{display:flex;gap:12px;align-items:center;margin:12px 0 4px}
+.dn .sv{width:150px;flex:none}
+.dn .lg{flex:1;min-width:0}
+.dn .li{display:flex;align-items:center;gap:6px;font-size:11px;padding:1.5px 0;line-height:1.5}
+.dn .li b{width:9px;height:9px;border-radius:3px;flex:none}
+.dn .li .n{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700}
+.dn .li .p{font-variant-numeric:tabular-nums;color:var(--ink2);flex:none}
+@media(max-width:360px){.dn{flex-direction:column}.dn .sv{width:170px}.dn .lg{width:100%}}
+
+/* ---------- forms ---------- */
+label.f{display:block;font-size:11px;font-weight:700;color:var(--ink2);margin:9px 0 4px}
+input,select,textarea{width:100%;font:inherit;font-size:16px;padding:10px 12px;
+  border:1.5px solid var(--line);border-radius:12px;background:#FFFDFE;color:var(--ink)}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--berry)}
+.btn{border:none;border-radius:13px;padding:12px 16px;font:inherit;font-size:14px;
+  font-weight:800;background:var(--berry);color:#fff;box-shadow:0 3px 0 var(--berry-d);
+  min-height:44px;width:100%}
+.btn:active{transform:translateY(2px);box-shadow:0 1px 0 var(--berry-d)}
+.btn.sub{background:#fff;color:var(--berry-d);box-shadow:0 0 0 1.5px var(--line) inset}
+.btn.gr{background:var(--mint);box-shadow:0 3px 0 #3FAE97}
+.btn.sm{padding:8px 12px;font-size:12.5px;width:auto;min-height:38px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.row3{display:grid;grid-template-columns:1fr 1fr auto;gap:9px;align-items:end}
+
+/* toggle */
+.tg{position:relative;width:46px;height:27px;flex:none}
+.tg input{position:absolute;opacity:0;width:100%;height:100%;margin:0;z-index:2}
+.tg i{position:absolute;inset:0;background:#E6DAE3;border-radius:99px;transition:.22s}
+.tg i:after{content:"";position:absolute;width:21px;height:21px;border-radius:50%;
+  background:#fff;top:3px;left:3px;transition:.22s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.tg input:checked + i{background:var(--mint)}
+.tg input:checked + i:after{transform:translateX(19px)}
+
+.frow{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px dashed var(--line)}
+.frow:last-child{border-bottom:none}
+.frow .mid{flex:1;min-width:0}
+.frow .nm{font-size:13.5px;font-weight:700}
+.frow .mt{font-size:10.5px;color:var(--ink2)}
+.frow .am{font-weight:800;font-variant-numeric:tabular-nums;font-size:13.5px}
+.frow.off{opacity:.42}
+
+/* advice */
+.adv{background:#FFFBF0;border:1.5px dashed #FFD98A;border-radius:14px;padding:12px;margin-bottom:9px}
+.adv .h{font-size:12.5px;font-weight:800;color:#B57A00;margin-bottom:4px}
+.adv .b{font-size:12.5px;line-height:1.7}
+.adv.good{background:#F1FBF5;border-color:#A8E0BF}
+.adv.good .h{color:#1E8A55}
+.ai{background:#F6F1FF;border:1.5px solid #DFD0FA;border-radius:14px;padding:13px;
+  font-size:13px;line-height:1.85;white-space:pre-wrap}
+.mini{font-size:10.5px;color:var(--ink2);line-height:1.6}
+.empty{text-align:center;padding:26px 12px;color:var(--ink2);font-size:12.5px}
+.empty .e{font-size:34px;display:block;margin-bottom:8px}
+.stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center}
+.stats div{background:#FBF5F9;border-radius:13px;padding:9px 4px}
+.stats .v{font-size:16px;font-weight:800;font-variant-numeric:tabular-nums}
+.stats .k{font-size:9.5px;color:var(--ink2);font-weight:700}
+.toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%) translateY(20px);
+  background:var(--ink);color:#fff;padding:11px 20px;border-radius:99px;font-size:13px;
+  font-weight:700;opacity:0;transition:.3s;z-index:200;pointer-events:none;max-width:90vw;text-align:center}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+svg{display:block;width:100%;overflow:visible}
+.ovl{position:fixed;inset:0;background:rgba(70,51,73,.42);z-index:150;opacity:0;
+  pointer-events:none;transition:opacity .2s}
+.ovl.on{opacity:1;pointer-events:auto}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:160;background:#fff;
+  border-radius:24px 24px 0 0;padding:8px 16px calc(20px + env(safe-area-inset-bottom));
+  transform:translateY(102%);transition:transform .26s cubic-bezier(.3,1,.4,1);
+  max-height:88vh;overflow-y:auto;box-shadow:0 -10px 30px -12px rgba(120,80,110,.5)}
+.sheet.on{transform:translateY(0)}
+.sheet .grab{width:40px;height:4px;border-radius:99px;background:#E9DCE6;margin:6px auto 12px}
+.sheet .hd{font-size:15px;font-weight:800;line-height:1.4}
+.sheet .hd small{display:block;font-size:11.5px;color:var(--ink2);font-weight:700;margin-top:3px}
+.cgrid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:12px 0 4px}
+.cbtn{border:2px solid transparent;background:#FAF5F9;border-radius:13px;padding:11px 8px;
+  font:inherit;font-size:12.5px;font-weight:800;color:var(--ink);display:flex;
+  align-items:center;gap:7px;min-height:46px;text-align:left}
+.cbtn b{width:11px;height:11px;border-radius:4px;flex:none}
+.cbtn.on{border-color:var(--ink);background:#fff}
+.cbtn.on:after{content:"✓";margin-left:auto;font-size:13px;color:var(--berry-d)}
+.srow{display:flex;align-items:center;gap:10px;padding:11px 0;border-top:1px dashed var(--line)}
+.srow .t{flex:1;font-size:13px;font-weight:700}
+.srow .t small{display:block;font-size:10.5px;color:var(--ink2);font-weight:600}
+.mnum{display:flex;gap:10px;padding:11px 0;border-bottom:1px dashed var(--line)}
+.mnum .k{width:26px;height:26px;border-radius:50%;background:var(--berry);color:#fff;
+  display:grid;place-items:center;font-size:12px;font-weight:800;flex:none}
+.mnum .v{flex:1;font-size:13px;line-height:1.7}
+.mnum .v b{color:var(--berry-d)}
+.msel button.today{width:34px;height:34px;padding:0;border:none;border-radius:50%;
+  background:#FFEFF6;color:var(--berry-d);font:inherit;font-size:9.5px;font-weight:800;
+  line-height:1;letter-spacing:-.03em;display:grid;place-items:center;flex:none;
+  box-shadow:var(--shadow);min-height:0;overflow:hidden;white-space:nowrap}
+.msel button.today:active{transform:scale(.92)}
+.msel{gap:5px}
+.aibtns{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:9px}
+.clink{display:flex;align-items:center;justify-content:center;gap:6px;
+  border-radius:13px;padding:12px 10px;font-size:13px;font-weight:800;
+  min-height:44px;text-decoration:none;background:#F6F1FF;color:#6A4BB5;
+  box-shadow:0 0 0 1.5px #DFD0FA inset}
+.clink:active{transform:translateY(1px)}
+.clink .cx{width:18px;height:18px;border-radius:5px;background:#6A4BB5;color:#fff;
+  display:grid;place-items:center;font-size:11px;flex:none}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="top">
+    <div class="logo">おうち家計簿<span class="dot">♡</span></div>
+    <div class="msel">
+      <button id="pv">‹</button><div class="lab" id="mlab">—</div><button id="nx">›</button>
+      <button class="today" id="todayBtn" style="display:none">今月</button>
+    </div>
+  </div>
+
+  <!-- ============ HOME ============ -->
+  <section class="page on" id="p-home">
+    <div class="card hero">
+      <div class="lbl" id="heroLbl">今月つかったお金</div>
+      <div class="big" id="heroAmt">0<small>円</small></div>
+      <div class="sub" id="heroSub"></div>
+      <div class="gauge" id="heroG"><i style="width:0"></i></div>
+    </div>
+
+    <div class="card">
+      <div class="stats" id="stats3"></div>
+    </div>
+
+    <div class="card">
+      <h2><span class="ic" style="background:#FFEFF6">🗓</span>いつ使った？</h2>
+      <div id="calWrap"></div>
+      <div class="legend"><span>すくない</span>
+        <b style="background:#FAF4F8"></b><b style="background:#FBD3E4"></b>
+        <b style="background:#F49CC3"></b><b style="background:#EF6FA4"></b>
+        <b style="background:#C33B75"></b><span>おおい</span></div>
+      <div id="daySel"></div>
+    </div>
+
+    <div class="card">
+      <h2><span class="ic" style="background:#EDF7FF">📊</span>何に使った？</h2>
+      <div id="catBars"></div>
+      <div class="mini" style="margin-top:9px">縦線 ┃ = 一般世帯のめやす（世帯人数で調整済み）。タップで明細</div>
+    </div>
+
+    <div class="card">
+      <h2><span class="ic" style="background:#E9F3FF">🏢</span>会社の立替（家計から除外）</h2>
+      <div id="expBox"></div>
+    </div>
+
+    <div class="card">
+      <h2><span class="ic" style="background:#EAF3EC">🏦</span>銀行の動き</h2>
+      <div id="bankBox"></div>
+    </div>
+
+    <div class="card">
+      <h2><span class="ic" style="background:#FFF7E6">💡</span>ここを抑えよう</h2>
+      <div id="advice"></div>
+    </div>
+
+    <div class="card">
+      <h2><span class="ic" style="background:#F6F1FF">🤖</span>AIのアドバイス</h2>
+      <button class="btn" id="aiBtn">今月を分析してもらう</button>
+      <div id="aiOut" style="margin-top:11px"></div>
+      <div class="aibtns" id="aiBox" style="display:none">
+        <button class="btn sub sm" id="aiCopy" style="width:100%">① メモをコピー</button>
+        <a class="clink" id="aiOpen" href="https://claude.ai/new" target="_blank" rel="noopener">
+          <span class="cx">C</span>② Claudeをひらく</a>
+      </div>
+      <div class="mini" id="aiHint" style="margin-top:7px;display:none">
+        ①でコピー →②でClaudeがひらく →入力欄を長押しして「ペースト」→送信。</div>
+    </div>
+  </section>
+
+  <!-- ============ TREND ============ -->
+  <section class="page" id="p-trend">
+    <div class="card">
+      <h2><span class="ic" style="background:#F1F9F3">⚖️</span>今月の収支</h2>
+      <div id="balBox"></div>
+    </div>
+
+    <div class="card">
+      <h2><span class="ic" style="background:#EDF7FF">💹</span>収入と支出のくらべ</h2>
+      <div class="scrollx"><div id="ieChart"></div></div>
+      <div id="ieLeg" style="margin-top:9px"></div>
+    </div>
+
+    <div class="card">
+      <h2><span class="ic" style="background:#FFF7E6">🐖</span>貯蓄率のうごき</h2>
+      <div class="scrollx"><div id="srChart"></div></div>
+      <div id="srNote" style="margin-top:9px"></div>
+    </div>
+
+    <div class="card">
+      <h2><span class="ic" style="background:#EDF7FF">📈</span>毎月のうごき</h2>
+      <div class="scrollx"><div id="trendChart"></div></div>
+      <div id="trendLeg" style="margin-top:10px"></div>
+    </div>
+    <div class="card">
+      <h2><span class="ic" style="background:#FFEFF6">🔍</span>費目べつの推移</h2>
+      <select id="trendCat"></select>
+      <div id="trendOne" style="margin-top:11px"></div>
+    </div>
+    <div class="card">
+      <h2><span class="ic" style="background:#F1FBF5">🏆</span>よく行くお店 TOP10</h2>
+      <div id="topShops"></div>
+    </div>
+  </section>
+
+  <!-- ============ LIST ============ -->
+  <section class="page" id="p-list">
+    <div class="card">
+      <h2><span class="ic" style="background:#FFEFF6">🧾</span>明細</h2>
+      <div class="row2">
+        <select id="fCat"></select>
+        <select id="fWho">
+          <option value="">だれでも</option><option>本人</option><option>家族</option>
+          <option value="ETC">ETC</option><option value="現金">現金</option><option value="固定費">固定費</option>
+        </select>
+      </div>
+      <div class="row2" style="margin-top:9px">
+        <input id="fKw" placeholder="お店の名前でさがす">
+        <select id="fUse">
+          <option value="">家計＋立替</option>
+          <option value="home">家計だけ</option>
+          <option value="exp">会社立替だけ</option>
+        </select>
+      </div>
+      <div id="donut"></div>
+      <button class="btn sub sm" id="selBtn" style="margin-top:9px;width:100%">まとめて選ぶ</button>
+      <div id="txList" style="margin-top:6px"></div>
+      <div id="selBar" style="display:none"></div>
+    </div>
+  </section>
+
+  <!-- ============ INPUT ============ -->
+  <section class="page" id="p-in">
+    <div class="card">
+      <h2><span class="ic" style="background:#E8F8F0">💵</span>現金でつかった分</h2>
+      <div class="row2">
+        <div><label class="f">日にち</label><input type="date" id="cDate"></div>
+        <div><label class="f">金額</label><input type="number" id="cAmt" inputmode="numeric" placeholder="1000"></div>
+      </div>
+      <label class="f">なにに使った？</label><input id="cNm" placeholder="スーパー、ランチ など">
+      <label class="f">費目</label><select id="cCat"></select>
+      <button class="btn gr" id="cAdd" style="margin-top:13px">この現金を記録する</button>
+      <div id="cashList" style="margin-top:12px"></div>
+    </div>
+
+    <div class="card">
+      <h2><span class="ic" style="background:#F0EAFB">🔁</span>毎月かかる固定費</h2>
+      <div class="mini" style="margin-bottom:10px">
+        一度いれれば毎月じどうで計上されます。やめたい月でスイッチをOFFにすると、<b>その月かぎりで終了</b>して翌月から出てきません。過去の記録はそのまま残ります。</div>
+      <div id="fixList"></div>
+      <details style="margin-top:8px"><summary>＋ 固定費をあたらしく追加</summary>
+        <label class="f">名前</label><input id="xNm" placeholder="家賃、保険、習いごと など">
+        <div class="row2">
+          <div><label class="f">金額（毎月）</label><input type="number" id="xAmt" inputmode="numeric"></div>
+          <div><label class="f">費目</label><select id="xCat"></select></div>
+        </div>
+        <div class="row2">
+          <div><label class="f">はじまり</label><input type="month" id="xSt"></div>
+          <div><label class="f">おわり（空欄=ずっと）</label><input type="month" id="xEd"></div>
+        </div>
+        <button class="btn" id="xAdd" style="margin-top:12px">固定費を追加</button>
+      </details>
+    </div>
+  </section>
+
+  <!-- ============ SETTINGS ============ -->
+  <section class="page" id="p-set">
+    <div class="card">
+      <h2><span class="ic" style="background:#EDF7FF">📥</span>明細をよみこむ</h2>
+
+      <div style="background:#FFF6FA;border-radius:14px;padding:12px;margin-bottom:11px">
+        <div style="font-size:13px;font-weight:800;margin-bottom:5px">💳 楽天カードの明細</div>
+        <div class="mini" style="margin-bottom:8px">
+          楽天e-NAVI（PC表示）→ ご利用明細 →「明細コピー用 Excel(CSV)」<br>
+          ファイル名は <b>enavi2026○○....csv</b></div>
+        <input type="file" id="csvCard" accept=".csv,text/csv" multiple>
+      </div>
+
+      <div style="background:#F1F9F3;border-radius:14px;padding:12px">
+        <div style="font-size:13px;font-weight:800;margin-bottom:5px">🏦 銀行の入出金明細</div>
+        <div class="mini" style="margin-bottom:8px">
+          インターネットバンキングの入出金明細をCSVで保存<br>
+          ファイル名は <b>○○銀行_普通口座_....csv</b></div>
+        <input type="file" id="csvBank" accept=".csv,text/csv" multiple>
+      </div>
+
+      <div class="mini" style="margin-top:10px">
+        <b>過去の分をあとから入れても大丈夫です。</b>すでにある明細はそのまま残り、<b>新しいものだけ</b>が追加されます。同じファイルを何度入れても増えません。</div>
+      <div id="impLog" style="margin-top:11px"></div>
+    </div>
+
+    <div class="card">
+      <h2><span class="ic" style="background:#FFF7E6">💰</span>おさいふの設定</h2>
+      <label class="f">収入をどこから取るか</label>
+      <select id="sIncSrc">
+        <option value="bank">銀行の入金から自動でひろう（おすすめ）</option>
+        <option value="manual">毎月おなじ額を手で入れる</option>
+      </select>
+
+      <div id="bankIncBox">
+        <label class="f">給与ふりこみ元の名前（半角カナの一部）</label>
+        <input id="sEmp" placeholder="ﾆﾂｻﾝ">
+        <div class="mini" style="margin-top:5px">銀行明細の「ｷﾕｳﾘﾖｳ ﾆﾂｻﾝｼﾞﾄﾞｳｼﾔ(ｶ」のような表示から、どれが給与かを見分けるために使います。</div>
+        <div class="srow" style="border-top:none;padding-top:12px">
+          <div class="t">児童手当なども収入に数える
+            <small>給与・賞与のほかに、手当や還付金も収入に含めます</small></div>
+          <label class="tg"><input type="checkbox" id="sIncOther"><i></i></label></div>
+      </div>
+
+      <div id="manualIncBox">
+        <div class="row2">
+          <div><label class="f">毎月の収入（手取り）</label><input type="number" id="sInc" inputmode="numeric" placeholder="500000"></div>
+          <div><label class="f">対象の年</label><input type="number" id="sIncY" inputmode="numeric"></div>
+        </div>
+        <div class="mini" id="incYear" style="margin-top:4px"></div>
+      </div>
+
+      <div class="row2" style="margin-top:9px">
+        <div><label class="f">世帯人数</label><input type="number" id="sPpl" inputmode="numeric" min="1"></div>
+        <div><label class="f">集計のきじゅん</label>
+          <select id="sBasis"><option value="use">利用月（使った日でまとめる）</option><option value="stmt">請求月（引落し額に合わせる）</option></select></div>
+      </div>
+      <button class="btn" id="sSave" style="margin-top:12px">設定を保存</button>
+    </div>
+
+    <div class="card">
+      <h2><span class="ic" style="background:#F6F1FF">🤖</span>AI分析をこの端末で動かす</h2>
+      <div class="mini" style="margin-bottom:9px">
+        Claude APIのキーを入れると、AI分析ボタンがこの端末だけで完結します。空のままなら、分析ボタンは「メモをコピー」に切り替わり、Claudeアプリに貼り付ける方式になります。<br>
+        キーはこの端末の中だけに保存され、<b>バックアップファイルには書き出しません</b>。</div>
+      <label class="f">APIキー（sk-ant-... ）</label>
+      <input type="password" id="sKey" placeholder="空欄でもOK" autocomplete="off">
+      <div class="row2" style="margin-top:9px">
+        <button class="btn sub sm" id="kSave" style="width:100%">キーを保存</button>
+        <button class="btn sub sm" id="kTest" style="width:100%">つながるか試す</button>
+      </div>
+      <div id="kMsg" style="margin-top:9px"></div>
+    </div>
+
+    <div class="card">
+      <h2><span class="ic" style="background:#F1FBF5">💾</span>バックアップと共有</h2>
+      <div class="mini" style="margin-bottom:9px">
+        データはこの端末のブラウザに保存されます。夫婦で共有するときは、書き出したファイルをGoogleドライブに置いて、もう一方の端末で読み込んでください。</div>
+      <div class="row2">
+        <button class="btn sub sm" id="expBtn" style="width:100%">書き出す</button>
+        <button class="btn sub sm" id="impBtn" style="width:100%">読み込む</button>
+      </div>
+      <button class="btn sub sm" id="shareBtn" style="width:100%;margin-top:9px;display:none">
+        LINEなどで送る</button>
+      <details style="margin-top:11px">
+        <summary>前に使っていたぶんのデータを引きつぐ</summary>
+        <div class="mini" style="margin:7px 0">
+          前のバージョンで「書き出す」から作ったファイルは、上の「読み込む」で入ります。<br>
+          ファイルにできない場合は、データの文字（<b>{</b> ではじまる長い文字列）をここに貼り付けてください。</div>
+        <textarea id="pasteIn" rows="4" placeholder='{"version":1, ...' style="font-size:12px"></textarea>
+        <button class="btn sub sm" id="pasteBtn" style="width:100%;margin-top:8px">貼り付けたデータを読み込む</button>
+        <div id="pasteMsg" style="margin-top:8px"></div>
+      </details>
+      <input type="file" id="jsonIn" accept=".json" style="display:none">
+    </div>
+
+    <div class="card">
+      <h2><span class="ic" style="background:#FFEFF6">🏠</span>一般世帯のめやす</h2>
+      <div class="mini" style="margin-bottom:9px">
+        <b>神奈川・大人2人＋子供3人（中1・小4・年少前）</b>を想定した月額です。<br>
+        総務省「家計調査」2024年の5人世帯の実数に、関東の物価差（×1.07）と就学児2人ぶんの教育費を反映させています。<br>
+        ただし<b>家計調査の「住居」は持ち家の家賃相当を含まない</b>ため、家賃やローンを固定費に入れていると住居だけ大きく超過して見えます。その分は差し引いて読んでください。</div>
+      <div id="benchList"></div>
+      <button class="btn sub sm" id="bSave" style="margin-top:11px;width:100%">めやすを保存</button>
+    </div>
+
+    <div class="card">
+      <h2><span class="ic" style="background:#F6F1FF">🏷</span>おみせの分類ルール</h2>
+      <div class="mini">明細で費目をなおすと、その店の分類としてここに覚えます。</div>
+      <div id="ruleList" style="margin-top:9px"></div>
+    </div>
+  </section>
+
+  <!-- ============ MANUAL ============ -->
+  <section class="page" id="p-man">
+    <div class="card">
+      <h2><span class="ic" style="background:#FFEFF6">🌷</span>毎月やること（これだけ）</h2>
+      <div class="mnum"><div class="k">1</div><div class="v">
+        パパから <b>カード明細と銀行明細のCSVファイル</b> をもらう。<br>
+        <span class="mini">LINEでもGoogleドライブでもOK。カードは「enavi2026○○.csv」、銀行は「〇〇銀行_普通口座_....csv」という名前です。</span></div></div>
+      <div class="mnum"><div class="k">2</div><div class="v">
+        下の <b>⚙️設定</b> →「明細をよみこむ」で、<b>💳カードは上のピンクの枠</b>、<b>🏦銀行は下の緑の枠</b>にそれぞれ入れる。<br>
+        <span class="mini">まちがえて逆に入れても、「こちらへ」と教えてくれるので大丈夫です。過去の分をあとから足しても、すでにある明細は消えません。</span></div></div>
+      <div class="mnum"><div class="k">3</div><div class="v">
+        <b>✏️入力</b> で、<b>現金で払った分</b> を入れる。<br>
+        <span class="mini">お財布から出したもの（子どもの集金、自販機、ご祝儀など）。カードの分は入れなくていいです。</span></div></div>
+      <div class="mnum"><div class="k">4</div><div class="v">
+        <b>🏠ホーム</b> を見る。合計・カレンダー・費目・アドバイスが出ています。</div></div>
+      <div class="mnum" style="border-bottom:none"><div class="k">5</div><div class="v">
+        気になったら <b>🏠ホーム</b> の 🤖AIのアドバイス で<br>
+        「① メモをコピー」→「② Claudeをひらく」→ 入力欄を長押しして <b>ペースト</b> → 送信。<br>
+        <span class="mini">やさしい言葉で「ここを抑えよう」を出してくれます。</span></div></div>
+      <a class="clink" href="https://claude.ai/new" target="_blank" rel="noopener" style="margin-top:12px">
+        <span class="cx">C</span>Claudeをひらく</a>
+      <div class="mini" style="margin-top:8px">
+        はじめてのときは、ここからログイン（またはアカウント作成）してください。
+        スマホに <b>Claudeアプリ</b> を入れておくと、次からはアプリが開いて速いです。</div>
+    </div>
+
+    <div class="card">
+      <h2><span class="ic" style="background:#F0EAFB">🔁</span>最初に一度だけやること</h2>
+      <div class="mnum"><div class="k">1</div><div class="v">
+        <b>⚙️設定</b> →「おさいふの設定」で <b>毎月の手取り収入</b> を入れる。<br>
+        <span class="mini">年に一度、昇給したときだけ直せばOKです。</span></div></div>
+      <div class="mnum" style="border-bottom:none"><div class="k">2</div><div class="v">
+        <b>✏️入力</b> →「毎月かかる固定費」に <b>家賃・保険・習いごと</b> などを登録。<br>
+        <span class="mini">一度入れれば毎月じどうで計上されます。やめた月にスイッチをOFFにすると、翌月から出てこなくなります（過去の記録は残ります）。</span></div></div>
+    </div>
+
+    <div class="card">
+      <h2><span class="ic" style="background:#EAF3EC">🏦</span>銀行明細について</h2>
+      <div class="mini" style="line-height:1.9">
+        銀行の明細を読み込むと、<b>🏠ホーム</b>に「銀行の動き」カードが出ます。<br><br>
+        ● <b>給与・賞与・児童手当</b>などの入金が見えます（家計の支出には数えません）。<br><br>
+        ● <b>クレジットカードの引落し</b>は、カード明細ですでに1件ずつ数えているので、既定で対象外です。<br><br>
+        ● <b>ATM引き出し・電子マネーのチャージ</b>も、使いみちが分からないので既定で対象外です。現金で使った分は<b>✏️入力</b>で別に記録してください。<br><br>
+        ● <b>税金・社会保険</b>は、一般家庭のめやす（家計調査）には入らない支出なので、別枠で表示し、費目のグラフには入れません。<br><br>
+        自動判定がまちがっていたら、明細をタップして直せます。
+      </div>
+    </div>
+
+    <div class="card">
+      <h2><span class="ic" style="background:#EDF7FF">🧾</span>明細でできること</h2>
+      <div class="mini" style="line-height:1.9">
+        明細のお店を <b>タップ</b> すると、下から窓が出てきます。そこで直せます。<br><br>
+        ● <b>費目をかえる</b>…お店の分類がちがうとき。<br>
+        　カードのお店は「このお店はいつもこの費目」として覚えます。次からは自動です。<br><br>
+        ● <b>特別費にする</b>…旅行・家電など、いつもは起きない大きな出費。<br>
+        　ふだんの支出と分けて見られます。<br><br>
+        ● <b>会社立替にする</b>…パパが仕事で使って、あとで会社から戻ってくる分。<br>
+        　家計の合計・グラフ・アドバイスからぜんぶ外れます。<br><br>
+        たくさんまとめて直したいときは「まとめて選ぶ」を押してチェックしてください。<br><br>
+        ● 銀行の明細は<b>「家計として数える」スイッチ</b>があります。<br>
+        　クレジットの引落し・ATM引き出し・給与などは、二重計上をさけるため<b>既定でOFF</b>になっています。理由は自動判定として表示されます。
+      </div>
+    </div>
+
+    <div class="card">
+      <h2><span class="ic" style="background:#F1F9F3">⚖️</span>収支の見かた</h2>
+      <div class="mini" style="line-height:1.9">
+        <b>📈すいい</b>タブのいちばん上に、その月の<b>収入 − 支出</b>が出ます。<br><br>
+        ● <b>収入</b>は銀行明細の給与・賞与から自動でひろいます（児童手当なども含める設定です）。<br><br>
+        ● <b>貯蓄率</b>＝のこり ÷ 収入。手取りの15%前後が目安といわれます。<br><br>
+        ● <b>賞与の月</b>は収入が大きく跳ねるので、その下の「ならした平均」のほうが実感に近くなります。<br><br>
+        ● グラフで<b>うすい棒に「?」</b>が付いた月は、まだカードの明細を入れていない月です。支出が実際より少なく見えているので、その月のカードCSVを入れると正しくなります。
+      </div>
+    </div>
+
+    <div class="card">
+      <h2><span class="ic" style="background:#FFF7E6">💡</span>見かたのコツ</h2>
+      <div class="mini" style="line-height:1.9">
+        ● <b>「まだ確定していません」</b>と出ている月は、カード会社に届くのが遅れた分がまだ入っていません。あとから増えます。2か月後のCSVを読むと確定します。<br><br>
+        ● <b>住居</b>が「めやすより多い」と出るのは正常です。めやすの数字に家賃が入っていないためなので、気にしないでください。<br><br>
+        ● <b>棒グラフの薄い部分</b>は会社立替です。家計のお金ではありません。<br><br>
+        ● <b>費目の縦線 ┃</b> は、神奈川・大人2人＋子ども3人のご家庭の平均です。
+      </div>
+    </div>
+
+    <div class="card">
+      <h2><span class="ic" style="background:#F1FBF5">💾</span>こまったとき</h2>
+      <div class="mini" style="line-height:1.9">
+        ● <b>データが消えた</b>…⚙️設定の「読み込む」でバックアップを戻せます。CSVさえあれば全部作り直せるので、パパにもらったCSVは消さないでおいてください。<br><br>
+        ● <b>パパのスマホと数字がちがう</b>…このアプリは端末ごとに保存しています。合わせたいときは、片方で「書き出す」→ドライブ経由→もう片方で「読み込む」。<br><br>
+        ● <b>ときどきバックアップ</b>を取っておくと安心です（⚙️設定 →「書き出す」）。
+      </div>
+    </div>
+  </section>
+</div>
+
+<nav class="tabs"><div class="in">
+  <button class="on" data-p="home"><span class="e">🏠</span>ホーム</button>
+  <button data-p="trend"><span class="e">📈</span>すいい</button>
+  <button data-p="list"><span class="e">🧾</span>明細</button>
+  <button data-p="in"><span class="e">✏️</span>入力</button>
+  <button data-p="set"><span class="e">⚙️</span>設定</button>
+  <button data-p="man"><span class="e">📖</span>つかい方</button>
+</div></nav>
+<div class="ovl" id="ovl"></div>
+<div class="sheet" id="sheet"><div class="grab"></div><div id="sheetBody"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+/* =========================================================
+   0. 保存レイヤ  window.storage → localStorage → メモリ
+   ========================================================= */
+const KEY = "kakeibo:v1";
+const Store = (() => {
+  const hasWS = typeof window !== "undefined" && window.storage && window.storage.get;
+  let mem = null;
+  return {
+    async load() {
+      if (hasWS) {
+        try { const r = await window.storage.get(KEY); return r ? JSON.parse(r.value) : null; }
+        catch (e) { return null; }
+      }
+      try { const s = localStorage.getItem(KEY); return s ? JSON.parse(s) : null; }
+      catch (e) { return mem; }
+    },
+    async save(o) {
+      const s = JSON.stringify(o);
+      if (hasWS) { try { await window.storage.set(KEY, s); return true; } catch (e) {} }
+      try { localStorage.setItem(KEY, s); return true; } catch (e) { mem = o; return false; }
+    }
+  };
+})();
+
+/* =========================================================
+   1. 費目とベンチマーク
+   ========================================================= */
+const CATS = [
+  ["食料",        "#EF6FA4"],
+  ["住居",        "#A98FE0"],
+  ["光熱・水道",  "#66B8E8"],
+  ["家具・家事用品","#5FCFB8"],
+  ["被服・履物",  "#C97BC4"],
+  ["保健医療",    "#9BCB6B"],
+  ["交通・通信",  "#FFC94D"],
+  ["教育",        "#FF9270"],
+  ["教養娯楽",    "#7FB2E5"],
+  ["その他",      "#B6A7BE"]
+];
+const CATC = Object.fromEntries(CATS);
+const CATN = CATS.map(c => c[0]);
+
+/* 一般家庭のめやす（月額・円）
+   出典: 総務省「家計調査」2024年 3-1 世帯人員別
+     5人世帯 消費支出 359,917 / 食料 105,480 / 教育 34,283
+     4人世帯 341,400 / 交通・通信 51,087 / 教養娯楽 33,980
+   ここから以下の手順で 神奈川・子供3人（中1・小4・年少前）向けに補正した。
+     ① 5人世帯の食料・教育は実数、残り8費目は4人世帯の配分を k=1.0237 でスケール
+     ② 関東補正 ×1.0686（関東320,832 / 全国300,243, 二人以上世帯）
+     ③ 教育のみ ×1.18（5人世帯の18歳未満は平均2.13人。就学児2人ぶんに引き上げ）
+   ①③は推定を含む。設定画面でe-Statの実数に差し替え可能。          */
+const BENCH0 = {
+  "食料": 112700, "住居": 19700, "光熱・水道": 26300, "家具・家事用品": 14200,
+  "被服・履物": 13100, "保健医療": 14200, "交通・通信": 55900, "教育": 43100,
+  "教養娯楽": 37200, "その他": 54700
+};
+const BENCH_PEOPLE = 5;   // 上の数字が想定している世帯人数
+
+/* =========================================================
+   2. 店名 → 費目 の辞書（部分一致・上から順に評価）
+   ========================================================= */
+const RULES0 = [
+  // 光熱・水道
+  [["レモンガス","東京電力","東京ガス","水道","都市ガス","プロパン","電力"], "光熱・水道"],
+  // 交通・通信（SIM・給油・駐車・ETCを食料より先に判定）
+  [["ドコモ","ｄｏｃｏﾓ","ｄｏｃｏｍｏ","ａｕ","ソフトバンク","povo","ｐｏｖｏ","ＮＵＲＯ","NURO",
+    "ＳＩＭ","ＥＴＣ","ETC","ﾊﾟ-ｷﾝｸﾞ","ﾊﾟｰｷﾝｸﾞ","ﾀｲﾑｽﾞ","タイムズ","イデミツ","アポロステーション",
+    "ｺｽﾓｾｷﾕ","ｴﾈｵｽ","ENEOS","CHEVRON","ｸｳｺｳ","空港","ｺｳﾂｳ","鉄道","ＪＲ","LAX RELAY",
+    "高速","ﾈｸｽｺ","ﾚﾝﾀｶ"], "交通・通信"],
+  // 保健医療
+  [["ｳｴﾙｼｱ","ｸﾘｴｲﾄ","ｶﾜﾁﾔｸﾋﾝ","ﾔﾂｷﾖｸ","薬局","ｻﾝﾄﾞﾗﾂｸﾞ","ﾄﾞﾗﾂｸﾞ","ｸﾘﾆﾂｸ","ｶﾞﾝｶ","歯科",
+    "ﾒｶﾞﾈ","病院","医院","調剤"], "保健医療"],
+  // 教育
+  [["ｶﾞﾂｺｳ","学校","給食","ｷﾕｳｼ","塾","ゼミ","スクール","こども園","保育","ﾎｲｸ"], "教育"],
+  // 食料（スーパー・コンビニ・外食）
+  [["ｵ-ｹ-","ｵｰｹｰ","ヨークマート","ﾍﾞﾙｸ","ｴｽﾎﾟﾂﾄ","ｷﾞﾖｳﾑｽ-ﾊﾟ-","ﾀｶﾊｼ ","ｶｽﾐ","相鉄ローゼン",
+    "ｱﾋﾟﾀ","ｲｵﾝ","イオン","こめたつ","松武商店","炭屋","ｾｲﾒﾝ","ﾗ-ﾒﾝ","ﾗｰﾒﾝ","ﾄﾐﾂﾞｶｼ",
+    "カマクラストアー","ｼｼﾞﾖｳ","市場","WM SUPERCENTER","WAL-MART","TRADER JOE","FRYS-FOOD",
+    "365 MARKET","ｹﾞﾝｾﾝｼﾖﾂﾌﾟ","セブン－イレブン","セブンイレブン","ファミリーマート","ローソン",
+    "ﾏｸﾄﾞﾅﾙﾄﾞ","マクドナルド","ｻｲｾﾞﾘﾔ","ｺｺｽ","ﾋﾞﾂｸﾞﾎﾞ-ｲ","スシロー","POPEYES","5GUYS",
+    "JOLLIBEE","RAISING CANES","RIB SHAC","MAIN GRILLE","ｶﾞﾝｿｶﾗｱｹﾞ","ﾄﾝｶﾂ","ｼﾔﾄﾚ-ｾﾞ",
+    "ﾊﾟｽﾃｲ","グリーンフェンネル","Ｃｏｋｅ　ＯＮ","ﾄｰﾀﾙﾌｰｽﾞ","トータルフーズ"], "食料"],
+  // 家具・家事用品（100均・家電もここ）
+  [["カインズ","ﾀﾞｲｿ-","ﾀﾞｲｿｰ","ｾﾘｱ","ｷﾔﾝﾄﾞｳ","キャンドゥ","ニトリ","無印","オフィスコネクト",
+    "イーベスト","ＥＣカレント","Ｊｏｓｈｉｎ","Ｘｉａｏｍｉ","ＢＩＣ　ＣＡＭＥＲＡ","ビックカメラ",
+    "ヤマダ","ケーズ","ホームセンター","ｺｰﾅﾝ"], "家具・家事用品"],
+  // 被服・履物
+  [["しまむら","ﾊﾟｼｵｽ","パシオス","ｼﾞ-ﾕ-","ＧＵ","ユニクロ","バースデイ","シャンブル","ｱﾌﾘ-ﾅ",
+    "ｱｳﾄﾚﾂﾄ","ORANGE","ＯＲＡＮＧＥ","ﾅｲｷ","ＮＩＫＥ","ＬａＣｈｏｕＣｈｏｕ","雅美良品","西松屋",
+    "ｸﾘ-ﾆﾝｸﾞ","クリーニング"], "被服・履物"],
+  // 教養娯楽
+  [["スポーツ","ｽﾎﾟ-ﾂ","ｽﾎﾟｰﾂ","フォトブランド","ららぽーと","ﾎﾟ-ﾀ-ｽﾞ","ﾎﾟｰﾀｰｽﾞ",
+    "ＰＳ－Ｄｉｒｅｃｔ","ｔｅｃｈｓｈｏｐ","ANTHROPIC","CLAUDE","ﾎﾃﾙ","HOTEL","RESIDENCE INN",
+    "旅","水族館","動物園","映画","ｼﾈﾏ","Ｎｅｔｆｌｉｘ","Ｓｐｏｔｉｆｙ","書店","ﾎﾝﾔ","丸善",
+    "紀伊國屋","ＴＳＵＴＡＹＡ","おもちゃ","ﾄｲｻﾞ"], "教養娯楽"],
+  // 住居
+  [["家賃","管理費","ﾔﾁﾝ","住宅","リフォーム","修繕"], "住居"]
+];
+/* 長音記号（ー ｰ －）とハイフンを一本化してから照合する */
+function normName(s) {
+  return String(s || "").replace(/[ー｜ｰ－‐−—–]/g, "-");
+}
+function autoCat(name) {
+  const n = normName(name);
+  for (const [kws, c] of RULES0) for (const k of kws) if (n.indexOf(normName(k)) >= 0) return c;
+  return "その他";
+}
+
+/* =========================================================
+   3. state
+   ========================================================= */
+const S = {
+  version: 1,
+  income: {},           // {"2026": 500000}  その年の毎月の手取り額
+  incomeMonthly: true,
+  apiKey: "",           // 端末内のみ。バックアップには書き出さない
+  people: 5,
+  basis: "use",
+  fixed: [],            // {id,name,amount,cat,st,ed}
+  cash: [],             // {id,date,name,amount,cat}
+  cards: {},            // "2026-07": [ {d,name,who,amt,fx,note} ]
+  rules: {},            // merchantKey -> cat
+  special: {},          // txid -> true
+  exp: {},              // txid -> true/false  会社立替（家計から除外）
+  expRules: {},         // merchantKey -> true  いつも立替になる店
+  expPaid: {},          // "2026-06" -> 会社から振り込まれた額
+  bench: Object.assign({}, BENCH0),
+  bank: {},             // "2026-06": [ {d, memo, amt, dir, bal} ]  銀行明細（暦月ごと）
+  bankSkip: {},         // txid -> true/false  家計の集計から外すかどうか（既定値の上書き）
+  employer: "",         // 給与振込元の判定に使う文字（半角カナ）。⚙️設定で入れる。
+                        // 空でも「ｷﾕｳﾘﾖｳ」「ｼﾖｳﾖ」で給与・賞与は判定できる。
+  incomeSource: "bank", // "bank" = 銀行の入金から自動 / "manual" = 手入力
+  incOther: true        // 児童手当などの入金も収入に数えるか
+};
+let curYm = null, selDay = null;
+
+/* =========================================================
+   4. ユーティリティ
+   ========================================================= */
+const yen = n => (n < 0 ? "-" : "") + Math.round(Math.abs(n)).toLocaleString("ja-JP");
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const ymAdd = (ym, k) => { const [y, m] = ym.split("-").map(Number); const d = new Date(y, m - 1 + k, 1);
+  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0"); };
+const ymLabel = ym => { const [y, m] = ym.split("-"); return `${y}年${Number(m)}月`; };
+const uid = () => Math.random().toString(36).slice(2, 9);
+function toast(m) { const t = $("toast"); t.textContent = m; t.classList.add("on");
+  clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove("on"), 2400); }
+function z2h(s) { return s.replace(/[０-９．]/g, c => "０１２３４５６７８９．".indexOf(c) < 10
+  ? String("０１２３４５６７８９".indexOf(c)) : "."); }
+
+/* 店名の正規化キー：末尾の店舗番号・「利用国XX」・/NFC を落とす */
+function mkey(name) {
+  return String(name || "")
+    .replace(/利用国[A-Z]{2}$/, "")
+    .replace(/\/NFC$/, "")
+    .replace(/[#＃]?\s*\d{3,}\s*$/, "")
+    .replace(/[*＊]+$/, "")
+    .trim();
+}
+
+/* =========================================================
+   5. CSV パーサ
+   ========================================================= */
+function parseCSV(text) {
+  const rows = []; let f = "", row = [], q = false;
+  text = text.replace(/^\uFEFF/, "");
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) {
+      if (c === '"') { if (text[i + 1] === '"') { f += '"'; i++; } else q = false; }
+      else f += c;
+    } else {
+      if (c === '"') q = true;
+      else if (c === ",") { row.push(f); f = ""; }
+      else if (c === "\n") { row.push(f); rows.push(row); row = []; f = ""; }
+      else if (c === "\r") { /* skip */ }
+      else f += c;
+    }
+  }
+  if (f.length || row.length) { row.push(f); rows.push(row); }
+  return rows.filter(r => r.some(x => x !== ""));
+}
+
+
+/* 取り込みは「置き換え」ではなく「不足分の追加」にする。
+   こうすると古い期間のCSVを後から入れても既存データが消えず、
+   同じファイルを何度入れても増えない。
+   同一内容が正当に複数ある場合（同日同額の駐車場2回など）に備え、
+   キーごとの「件数」を比べて足りない分だけ足す。               */
+function mergeByCount(existing, incoming, keyFn) {
+  const have = {};
+  existing.forEach(t => { const k = keyFn(t); have[k] = (have[k] || 0) + 1; });
+  const need = {};
+  incoming.forEach(t => { const k = keyFn(t); need[k] = (need[k] || 0) + 1; });
+  const out = existing.slice();
+  const used = {};
+  let added = 0;
+  incoming.forEach(t => {
+    const k = keyFn(t);
+    used[k] = (used[k] || 0) + 1;
+    if (used[k] > (have[k] || 0)) { out.push(t); added++; }
+  });
+  out.sort((a, b) => (b.d || "").localeCompare(a.d || ""));
+  return { out, added, kept: existing.length };
+}
+const cardKey = t => [t.d, t.name, t.who || "", t.amt].join("\u0001");
+const bankKey = t => [t.d, t.memo, t.amt, t.dir].join("\u0001");
+
+/* =========================================================
+   6b. 銀行CSV（横浜銀行フォーマット）
+   ========================================================= */
+function isBankCSV(rows) {
+  return rows.length > 0 && rows[0].indexOf("お取引日付") >= 0;
+}
+
+/* 支払方向は「摘要（メモ）」と「金額」がどちらの列に入っているかで判定する。
+   例: 支払 → [日付, 金額, 摘要, 残高, ""]
+       入金 → [日付, 摘要, 金額, 残高]                                  */
+function importBankCSV(text, filename) {
+  const rows = parseCSV(text);
+  if (!rows.length) throw new Error("中身が読めませんでした");
+  const isNum = s => /^[\d,]+$/.test((s || "").trim()) && (s || "").trim() !== "";
+  const items = [];
+  for (let r = 1; r < rows.length; r++) {
+    const row = rows[r];
+    const d = (row[0] || "").trim();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) continue;
+    const a1 = row[1] || "", a2 = row[2] || "", bal = row[3] || "";
+    let amt, memo, dir;
+    if (isNum(a1) && !isNum(a2)) { amt = parseInt(a1.replace(/,/g, ""), 10); memo = a2.trim(); dir = "pay"; }
+    else if (!isNum(a1) && isNum(a2)) { amt = parseInt(a2.replace(/,/g, ""), 10); memo = a1.trim(); dir = "deposit"; }
+    else continue;   // 判定できない行はスキップ（壊れたデータを無理に取り込まない）
+    if (!isFinite(amt) || !memo) continue;
+    items.push({ d, memo, amt, dir, bal: bal.replace(/,/g, "") });
+  }
+  if (!items.length) throw new Error("明細行がありませんでした");
+  const byYm = {};
+  items.forEach(t => { const ym = t.d.slice(0, 7); (byYm[ym] = byYm[ym] || []).push(t); });
+  return { byYm, total: items.length,
+    range: [items[0].d, items[items.length - 1].d] };
+}
+
+/* 銀行明細の自動分類。方向（支払/入金）ごとにルールを分ける。
+   ここでの判定は摘要の文字列一致による推定であり、SMBC経由の各種引落しなど
+   意味が確定できないものは「その他」に倒し、あとで手動で直せるようにしている。 */
+const BANK_RULES_PAY = [
+  [["ｸﾚｼﾞﾂﾄ", "ｵﾘｺ", "ｾｿﾞﾝ", "ﾕ-ｼ-ｶ-ﾄﾞ", "ﾗｸﾃﾝｶ-ﾄﾞ"], "creditcard", "その他",
+    "クレジットカードの引落し（カード明細と重複するため既定で対象外）"],
+  [["ｼﾞﾄﾞｳｷ"], "atm", "その他", "ATMでの引き出し（現金の記録と重複しないよう既定で対象外）"],
+  [["ﾍﾟｲﾍﾟｲ", "PAYPAY", "ﾁﾔ-ｼﾞ"], "atm", "その他", "電子マネーへのチャージ（使った時点と重複しないよう既定で対象外）"],
+  [["ｺﾃｲｼｻﾝｾﾞｲ", "ｼﾐﾝｾﾞｲｶ"], "tax", "税金・社会保険等", "税金・社会保険（家計調査のめやすには含まれません）"],
+  [["ｶﾞﾂｺｳﾁﾖｳｼﾕｳｷﾝ", "ｶﾞﾂｺｳｷﾖｳｲ"], "expense", "教育", ""],
+  [["電気"], "expense", "光熱・水道", ""],
+  [["水道"], "expense", "光熱・水道", ""],
+  [["ガス"], "expense", "光熱・水道", ""],
+  [["NTT"], "expense", "交通・通信", ""],
+  [["ｶﾞｸｾｲｼｴﾝｷ"], "expense", "その他", "奨学金の返還とみられます"]
+];
+const BANK_RULES_DEP = [
+  [["ｼﾞﾄﾞｳﾃｱﾃ"], "income", "児童手当", "other", ""],
+  [["ｺｿﾀﾞﾃ"], "income", "子育て給付金", "other", ""],
+  [["ｾﾞｲｶﾝﾌﾟ"], "income", "税金の還付", "other", ""]
+];
+function classifyBank(memo, dir) {
+  if (dir === "pay") {
+    for (const [kws, kind, cat, label] of BANK_RULES_PAY)
+      for (const k of kws) if (memo.indexOf(k) >= 0) return { kind, cat, label, incomeKind: null };
+    return { kind: "expense", cat: "その他", label: "", incomeKind: null };
+  }
+  // 入金：まず勤務先からの給与・賞与を判定する
+  const emp = (S.employer || "").trim();
+  const fromEmployer = emp && memo.indexOf(emp) >= 0;
+  if (memo.indexOf("ｷﾕｳﾘﾖｳ") >= 0 || memo.indexOf("ｷﾕｳﾖ") >= 0)
+    return { kind: "income", cat: "給与", label: fromEmployer ? "勤務先からの給与" : "給与とみられる入金",
+             incomeKind: "salary" };
+  if (memo.indexOf("ｼﾖｳﾖ") >= 0)
+    return { kind: "income", cat: "賞与", label: fromEmployer ? "勤務先からの賞与" : "賞与とみられる入金",
+             incomeKind: "bonus" };
+  for (const [kws, kind, cat, ik, label] of BANK_RULES_DEP)
+    for (const k of kws) if (memo.indexOf(k) >= 0) return { kind, cat, label, incomeKind: ik };
+  return { kind: "income", cat: "その他の収入", label: "", incomeKind: "other" };
+}
+function bankTxId(ym, t, seen) {
+  const key = hash32([t.d, t.memo, t.amt, t.dir].join("\u0001"));
+  seen[key] = (seen[key] || 0) + 1;
+  return "bank:" + ym + "|" + key + (seen[key] > 1 ? "#" + seen[key] : "");
+}
+function bankCardsOf(ym) {
+  const seen = {};
+  return (S.bank[ym] || []).map(t => {
+    const id = bankTxId(ym, t, seen);
+    const { kind, cat, label, incomeKind } = classifyBank(t.memo, t.dir);
+    const skip = (S.bankSkip[id] !== undefined) ? S.bankSkip[id] : (kind !== "expense");
+    return {
+      id, d: t.d, name: t.memo, who: t.dir === "pay" ? "支払" : "入金",
+      amt: t.amt, cat, src: "bank", bankKind: kind, bankLabel: label, incomeKind,
+      exp: skip, fx: null, note: ""
+    };
+  });
+}
+
+function importEnavi(text, filename) {
+  const rows = parseCSV(text);
+  if (!rows.length) throw new Error("中身が読めませんでした");
+  const hdr = rows[0];
+  if (hdr.indexOf("利用日") < 0) throw new Error("楽天e-NAVIのCSVではないみたいです");
+  const iD = hdr.indexOf("利用日"), iN = hdr.indexOf("利用店名・商品名"),
+        iU = hdr.indexOf("利用者"), iA = hdr.indexOf("利用金額");
+
+  const items = [];
+  for (let r = 1; r < rows.length; r++) {
+    const row = rows[r];
+    const d = (row[iD] || "").trim();
+    if (!d) { // 継続行：外貨情報 or ETC区間
+      if (items.length) {
+        const note = (row[iN] || "").trim();
+        const t = items[items.length - 1];
+        t.note = note;
+        const m = z2h(note).match(/現地利用額\s*([\d.]+)\s*変換レート\s*([\d.]+)/);
+        if (m) t.fx = { amt: parseFloat(m[1]), rate: parseFloat(m[2]) };
+      }
+      continue;
+    }
+    const amt = parseInt(String(row[iA]).replace(/[^\d-]/g, ""), 10);
+    if (!isFinite(amt)) continue;
+    items.push({ d: d.replace(/\//g, "-"), name: (row[iN] || "").trim(),
+                 who: (row[iU] || "").trim(), amt: amt, fx: null, note: "" });
+  }
+  if (!items.length) throw new Error("明細行がありませんでした");
+
+  // 請求月の決定：ファイル名 → ヘッダ「N月支払金額」+ 最終利用日の年
+  let ym = null;
+  const fm = String(filename || "").match(/enavi(\d{4})(\d{2})/);
+  if (fm) ym = fm[1] + "-" + fm[2];
+  if (!ym) {
+    const hm = hdr.join(",").match(/(\d{1,2})月支払金額/);
+    const maxD = items.map(t => t.d).sort().pop();
+    const my = Number(maxD.slice(0, 4)), mm = Number(maxD.slice(5, 7));
+    if (hm) { const m = Number(hm[1]); ym = (my + (m < mm ? 1 : 0)) + "-" + String(m).padStart(2, "0"); }
+    else ym = maxD.slice(0, 7);
+  }
+  const total = items.reduce((s, t) => s + t.amt, 0);
+  return { ym, items, total };
+}
+
+/* =========================================================
+   6. 月の取引を組み立てる
+   ========================================================= */
+function fixedActive(f, ym) {
+  if (f.st && ym < f.st) return false;
+  if (f.ed && ym > f.ed) return false;
+  return true;
+}
+/* 利用月ベースのとき、その月が確定したか。
+   ある月Mの利用は 請求月M+1 に大半、遅れた分が M+2 に載る。
+   よって 請求月M+2 のCSVを取り込んだ時点で、月Mは確定とみなす。 */
+function isFinalized(ym) {
+  if (S.basis !== "use") return true;
+  return !!S.cards[ymAdd(ym, 1)] && !!S.cards[ymAdd(ym, 2)];
+}
+function catOf(name, txid) {
+  const k = mkey(name);
+  if (S.rules[k]) return S.rules[k];
+  return autoCat(name);
+}
+function txOfMonth(ym) {
+  const out = [];
+  if (S.basis === "stmt") {
+    cardsOf(ym).forEach(t => out.push(t));
+  } else {
+    Object.keys(S.cards).forEach(k => cardsOf(k).forEach(t => {
+      if (t.d.slice(0, 7) === ym) out.push(t);
+    }));
+  }
+  S.cash.filter(c => c.date.slice(0, 7) === ym).forEach(c => out.push({
+    id: "c:" + c.id, d: c.date, name: c.name, who: "現金", amt: c.amount,
+    cat: c.cat, src: "cash", fx: null, note: ""
+  }));
+  S.fixed.filter(f => fixedActive(f, ym)).forEach(f => out.push({
+    id: "f:" + f.id + ":" + ym, d: ym + "-01", name: f.name, who: "固定費",
+    amt: Number(f.amount) || 0, cat: f.cat, src: "fixed", fx: null, note: ""
+  }));
+  bankCardsOf(ym).forEach(t => out.push(t));   // 銀行は常にカレンダー月（実際の取引日）で一致させる
+  out.forEach(t => {
+    t.sp = !!S.special[t.id];
+    if (t.src !== "bank") {
+      t.exp = (S.exp[t.id] !== undefined) ? !!S.exp[t.id]
+            : (t.src === "card" && !!S.expRules[mkey(t.name)]);
+    }
+  });
+  return out.sort((a, b) => b.d.localeCompare(a.d) || b.amt - a.amt);
+}
+/* 明細の識別子は「行番号」ではなく「中身」から作る。
+   こうしておくと、あとから届いた利用分が増えた同じ請求月のCSVを
+   読み直しても、立替や特別費のフラグが別の明細にズレない。
+   同一内容が同月に複数ある場合（同じ日に同額の駐車場2回など）は
+   出現順の連番を末尾に付けて区別する。                        */
+function hash32(str) {
+  let h = 2166136261;
+  for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return (h >>> 0).toString(36);
+}
+function cardTxId(ym, t, seen) {
+  const key = hash32([t.d, t.name, t.who || "", t.amt].join("\u0001"));
+  seen[key] = (seen[key] || 0) + 1;
+  return ym + "|" + key + (seen[key] > 1 ? "#" + seen[key] : "");
+}
+function cardsOf(ym) {
+  const seen = {};
+  return (S.cards[ym] || []).map(t => ({
+    id: cardTxId(ym, t, seen), d: t.d, name: t.name, who: t.who || "本人",
+    amt: t.amt, cat: catOf(t.name), src: "card", fx: t.fx, note: t.note || ""
+  }));
+}
+function allMonths() {
+  const set = new Set();
+  if (S.basis === "stmt") Object.keys(S.cards).forEach(k => set.add(k));
+  else Object.values(S.cards).forEach(a => a.forEach(t => set.add(t.d.slice(0, 7))));
+  S.cash.forEach(c => set.add(c.date.slice(0, 7)));
+  Object.keys(S.bank).forEach(k => set.add(k));
+  if (!set.size) { const n = new Date(); set.add(n.getFullYear() + "-" + String(n.getMonth() + 1).padStart(2, "0")); }
+  return [...set].sort();
+}
+const sum = a => a.reduce((s, t) => s + t.amt, 0);
+function byCat(tx) {
+  const o = {}; CATN.forEach(c => o[c] = 0);
+  tx.forEach(t => { o[t.cat] = (o[t.cat] || 0) + t.amt; });
+  return o;
+}
+/* S.income は「その年の毎月の手取り額」を年ごとに持つ。
+   年俸制でインセンティブなしのため、月額は年内一定として扱う。 */
+function bankIncome(ym) {
+  const inc = bankCardsOf(ym).filter(t => t.bankKind === "income");
+  const salary = inc.filter(t => t.incomeKind === "salary" || t.incomeKind === "bonus");
+  const other  = inc.filter(t => t.incomeKind === "other");
+  return { salary: sum(salary), other: sum(other),
+           total: sum(salary) + (S.incOther ? sum(other) : 0),
+           items: inc, hasData: inc.length > 0 };
+}
+function manualIncome(ym) {
+  const y = ym.slice(0, 4);
+  let v = S.income[y];
+  if (v == null) { Object.keys(S.income).sort().forEach(k => { if (k <= y) v = S.income[k]; }); }
+  return v ? Number(v) : 0;
+}
+function monthIncome(ym) {
+  if (S.incomeSource === "bank") {
+    const b = bankIncome(ym);
+    if (b.hasData) return b.total;
+    if (Object.keys(S.bank).length) return 0;   // 銀行データはあるがその月に入金なし
+  }
+  return manualIncome(ym);
+}
+function benchScaled(cat) {
+  // めやすは5人世帯を基準にしているので、人数が違うときだけ平方根で弱くスケール
+  const b = Number(S.bench[cat]) || 0;
+  const n = Number(S.people) || BENCH_PEOPLE;
+  return b * Math.sqrt(n / BENCH_PEOPLE);
+}
+
+/* 特別費（旅行・家電など一時的な大きい出費）の自動候補
+   修正Zスコア  M = 0.6745(x - median) / MAD  が 3.5 を超え、
+   かつ「月収の5%（下限3万円）」も超えたものだけを特別費あつかいにする。
+   固定費は毎月出るものなので対象外。                              */
+function autoSpecial(tx, ym) {
+  const v = tx.filter(t => t.src !== "fixed" && !t.exp).map(t => t.amt).sort((a, b) => a - b);
+  const inc = monthIncome(ym);
+  const floor = Math.max(30000, inc * 0.05);
+  if (v.length < 8) return t => t.src !== "fixed" && !t.exp && t.amt >= floor;
+  const med = v[Math.floor(v.length / 2)];
+  const dev = v.map(x => Math.abs(x - med)).sort((a, b) => a - b);
+  const mad = dev[Math.floor(dev.length / 2)] || 1;
+  const thr = Math.max(floor, med + 3.5 * mad / 0.6745);
+  return t => t.src !== "fixed" && !t.exp && t.amt >= thr;
+}
+
+/* =========================================================
+   7. 描画
+   ========================================================= */
+function thisYm() {
+  const n = new Date();
+  return n.getFullYear() + "-" + String(n.getMonth() + 1).padStart(2, "0");
+}
+function renderAll() {
+  $("mlab").textContent = ymLabel(curYm);
+  $("todayBtn").style.display = (curYm === thisYm()) ? "none" : "block";
+  const all = txOfMonth(curYm);
+  const isSp = autoSpecial(all, curYm);
+  all.forEach(t => { if (S.special[t.id] === undefined) t.sp = isSp(t); });
+  const tx = all.filter(t => !t.exp);      // 家計として数える分
+  renderHero(tx);
+  renderStats(tx);
+  renderCal(tx);
+  renderCats(tx);
+  renderExp(all);
+  renderBank(all);
+  renderAdvice(tx);
+  renderBalance();
+  renderTrend();
+  renderList();
+  renderCash();
+  renderFixed();
+}
+
+function renderHero(tx) {
+  const tot = sum(tx), sp = sum(tx.filter(t => t.sp)), normal = tot - sp;
+  const inc = monthIncome(curYm);
+  $("heroAmt").innerHTML = yen(tot) + "<small>円</small>";
+  const prev = sum(txOfMonth(ymAdd(curYm, -1)).filter(t => !t.exp));
+  const sub = [];
+  if (prev > 0) {
+    const d = tot - prev, p = (d / prev * 100);
+    sub.push(`<span class="chip${d > 0 ? " warn" : ""}">先月比 ${d > 0 ? "▲" : "▼"}${yen(Math.abs(d))}円（${p > 0 ? "+" : ""}${p.toFixed(0)}%）</span>`);
+  }
+  if (sp > 0) sub.push(`<span class="chip">うち特別費 ${yen(sp)}円</span>`);
+  if (!isFinalized(curYm)) sub.push('<span class="chip">まだ確定していません</span>');
+  if (inc > 0) {
+    const r = tot / inc * 100;
+    sub.push(`<span class="chip${r > 100 ? " warn" : ""}">収入の ${r.toFixed(0)}%</span>`);
+    const left = inc - tot;
+    sub.push(`<span class="chip${left < 0 ? " warn" : ""}">${left >= 0 ? "のこり" : "オーバー"} ${yen(Math.abs(left))}円</span>`);
+    const g = $("heroG"); g.classList.toggle("over", r > 100);
+    g.firstElementChild.style.width = Math.min(100, r) + "%";
+  } else {
+    sub.push('<span class="chip">設定で年収をいれると のこりが出ます</span>');
+    $("heroG").firstElementChild.style.width = "0%";
+  }
+  $("heroSub").innerHTML = sub.join("");
+  $("heroLbl").textContent = (S.basis === "stmt" ? "この請求月につかったお金" : "この月につかったお金")
+    + (normal !== tot ? `（ふだん分 ${yen(normal)}円）` : "");
+}
+
+function renderStats(tx) {
+  const card = sum(tx.filter(t => t.src === "card")),
+        cash = sum(tx.filter(t => t.src === "cash")),
+        fix = sum(tx.filter(t => t.src === "fixed"));
+  $("stats3").innerHTML = `
+    <div><div class="v">${yen(card)}</div><div class="k">カード</div></div>
+    <div><div class="v">${yen(cash)}</div><div class="k">現金</div></div>
+    <div><div class="v">${yen(fix)}</div><div class="k">固定費</div></div>`;
+}
+
+function renderCal(tx) {
+  const byDay = {};
+  tx.filter(t => t.src !== "fixed").forEach(t => byDay[t.d] = (byDay[t.d] || 0) + t.amt);
+  const days = Object.keys(byDay);
+  if (!days.length) { $("calWrap").innerHTML = '<div class="empty"><span class="e">🌸</span>まだ記録がありません</div>';
+    $("daySel").innerHTML = ""; return; }
+  const mx = Math.max(...Object.values(byDay));
+  const months = [...new Set(days.map(d => d.slice(0, 7)))].sort();
+  const SH = ["日", "月", "火", "水", "木", "金", "土"];
+  let html = "";
+  months.forEach(m => {
+    const [y, mo] = m.split("-").map(Number);
+    const first = new Date(y, mo - 1, 1).getDay();
+    const last = new Date(y, mo, 0).getDate();
+    html += `<div class="calm"><div class="t">${mo}月</div><div class="cal">`;
+    SH.forEach(s => html += `<div class="h">${s}</div>`);
+    for (let i = 0; i < first; i++) html += "<div></div>";
+    for (let d = 1; d <= last; d++) {
+      const key = `${y}-${String(mo).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+      const v = byDay[key] || 0;
+      const r = v / mx;
+      const bg = v === 0 ? "#FAF4F8"
+        : r < .12 ? "#FBD3E4" : r < .3 ? "#F49CC3" : r < .6 ? "#EF6FA4" : "#C33B75";
+      html += `<div class="d${v ? " has" : ""}${selDay === key ? " sel" : ""}" data-d="${key}"
+        style="background:${bg}">${d}${v ? `<div class="v">${v >= 10000 ? (v / 10000).toFixed(1) + "万" : Math.round(v / 1000) + "千"}</div>` : ""}</div>`;
+    }
+    html += "</div></div>";
+  });
+  $("calWrap").innerHTML = html;
+  $("calWrap").querySelectorAll(".d[data-d]").forEach(el => el.onclick = () => {
+    selDay = (selDay === el.dataset.d) ? null : el.dataset.d;
+    renderCal(txOfMonth(curYm));
+  });
+  if (selDay && byDay[selDay]) {
+    const list = tx.filter(t => t.d === selDay);
+    $("daySel").innerHTML = `<div style="margin-top:12px;padding-top:11px;border-top:1.5px dashed var(--line)">
+      <div style="font-size:12.5px;font-weight:800;margin-bottom:5px">${selDay.slice(5).replace("-", "/")} ・ ${yen(byDay[selDay])}円</div>
+      ${list.map(t => txRow(t, true)).join("")}</div>`;
+  } else $("daySel").innerHTML = "";
+}
+
+function renderCats(tx) {
+  const bc = byCat(tx), tot = sum(tx) || 1;
+  const rows = CATN.map(c => [c, bc[c] || 0]).filter(r => r[1] > 0).sort((a, b) => b[1] - a[1]);
+  if (!rows.length) { $("catBars").innerHTML = '<div class="empty"><span class="e">🎀</span>データを読み込むとここに出ます</div>'; return; }
+  const mx = Math.max(...rows.map(r => r[1]), ...rows.map(r => benchScaled(r[0])));
+  $("catBars").innerHTML = rows.map(([c, v]) => {
+    const bm = benchScaled(c);
+    return `<div class="catrow" data-cat="${esc(c)}">
+      <div class="nm">${esc(c)}</div>
+      <div class="track"><i style="width:${(v / mx * 100).toFixed(1)}%;background:${CATC[c]}"></i>
+        ${bm > 0 ? `<span class="bm" style="left:${Math.min(99.5, bm / mx * 100).toFixed(1)}%"></span>` : ""}</div>
+      <div class="amt">${yen(v)}</div><div class="pct">${(v / tot * 100).toFixed(0)}%</div></div>`;
+  }).join("");
+  $("catBars").querySelectorAll(".catrow").forEach(el => el.onclick = () => {
+    $("fCat").value = el.dataset.cat; go("list"); renderList();
+  });
+}
+
+function renderExp(all) {
+  const ex = all.filter(t => t.exp && t.src !== "bank");
+  const tot = sum(ex);
+  const paid = Number(S.expPaid[curYm] || 0);
+
+  // 未回収の累計（表示中の月まで）
+  let cum = 0;
+  allMonths().filter(m => m <= curYm).forEach(m => {
+    cum += sum(txOfMonth(m).filter(t => t.exp)) - Number(S.expPaid[m] || 0);
+  });
+
+  // 海外利用のワンタップ登録
+  const abroad = all.filter(t => !t.exp && t.src === "card" && /利用国[A-Z]{2}/.test(t.name));
+  const etc = all.filter(t => !t.exp && t.src === "card" && /ＥＴＣ|ETC/.test(t.name));
+
+  let h = "";
+  if (!ex.length && !abroad.length && !etc.length) {
+    h = `<div class="empty" style="padding:16px"><span class="e">🏢</span>
+      会社で立て替えた分は、明細でチェックを外すとここに移ります。<br>
+      家計の合計・費目・グラフ・AI分析からぜんぶ除かれます。</div>`;
+  } else {
+    if (ex.length) {
+      h += `<div class="stats" style="margin-bottom:11px">
+        <div><div class="v">${yen(tot)}</div><div class="k">今月の立替</div></div>
+        <div><div class="v">${yen(paid)}</div><div class="k">補填された額</div></div>
+        <div><div class="v" style="color:${tot - paid > 0 ? "#D94B87" : "#279B6E"}">${yen(tot - paid)}</div>
+          <div class="k">今月の未回収</div></div></div>`;
+      h += `<label class="f">会社から振り込まれた額（この月ぶん）</label>
+        <input type="number" inputmode="numeric" id="expPaidIn" value="${paid || ""}" placeholder="0">
+        <button class="btn sub sm" id="expPaidSave" style="margin-top:8px;width:100%">補填額を記録する</button>`;
+      if (Math.abs(cum) >= 1) {
+        h += `<div class="adv${cum > 0 ? "" : " good"}" style="margin-top:11px">
+          <div class="h">未回収の累計 ${yen(cum)}円</div>
+          <div class="b">${cum > 0
+            ? "立て替えたまま、まだ戻ってきていない金額です。カードの引き落としでは一度出ていくので、口座の残高に注意してください。"
+            : "補填のほうが多く入っています。入力ミスがないか確認してください。"}</div></div>`;
+      }
+      h += `<div style="margin-top:10px">` + ex.slice(0, 20).map(t => txRow(t, false)).join("") + `</div>`;
+      if (ex.length > 20) h += `<div class="mini">ほか${ex.length - 20}件</div>`;
+    }
+    if (abroad.length || etc.length) {
+      h += `<div class="mini" style="margin-top:11px;margin-bottom:6px">まだ家計に入っている分をまとめて移せます</div>`;
+      if (abroad.length) h += `<button class="btn sub sm" id="expAbroad" style="width:100%;margin-bottom:7px">
+        海外利用 ${abroad.length}件（${yen(sum(abroad))}円）を立替にする</button>`;
+      if (etc.length) h += `<button class="btn sub sm" id="expEtc" style="width:100%">
+        ETC ${etc.length}件（${yen(sum(etc))}円）を立替にする</button>`;
+    }
+  }
+  $("expBox").innerHTML = h;
+
+  const pi = $("expPaidSave");
+  if (pi) pi.onclick = () => {
+    S.expPaid[curYm] = Number($("expPaidIn").value) || 0;
+    save(); renderAll(); toast("記録しました");
+  };
+  const ab = $("expAbroad");
+  if (ab) ab.onclick = () => { abroad.forEach(t => S.exp[t.id] = true); save(); renderAll(); toast(`海外利用${abroad.length}件を立替にしました`); };
+  const eb = $("expEtc");
+  if (eb) eb.onclick = () => { etc.forEach(t => S.exp[t.id] = true); save(); renderAll(); toast(`ETC${etc.length}件を立替にしました`); };
+}
+
+function renderBank(all) {
+  const bk = all.filter(t => t.src === "bank");
+  const box = $("bankBox");
+  if (!bk.length) {
+    box.innerHTML = `<div class="empty" style="padding:16px"><span class="e">🏦</span>
+      銀行の入出金明細（CSV）を読み込むと、給与・賞与・税金・ATMなどがここに出ます。<br>
+      クレジットの引落しは既定で対象外になり、二重計上をさけます。</div>`;
+    return;
+  }
+  const byKind = k => bk.filter(t => t.bankKind === k);
+  const income = byKind("income"), cc = byKind("creditcard"), atm = byKind("atm"), tax = byKind("tax");
+  const incTot = sum(income), ccTot = sum(cc), atmTot = sum(atm), taxTot = sum(tax);
+
+  let h = `<div class="stats">
+    <div><div class="v">${yen(incTot)}</div><div class="k">銀行の入金</div></div>
+    <div><div class="v">${yen(ccTot)}</div><div class="k">カード引落し</div></div>
+    <div><div class="v">${yen(taxTot)}</div><div class="k">税金・社会保険</div></div>
+  </div>`;
+
+  if (income.length) h += `<div class="mini" style="margin-top:11px;margin-bottom:4px">入金の内訳</div>`
+    + income.slice(0, 8).map(t => txRow(t, true)).join("");
+
+  if (taxTot > 0) h += `<div class="adv" style="margin-top:11px"><div class="h">税金・社会保険 ${yen(taxTot)}円</div>
+    <div class="b">家計調査のめやすには含まれない支出です（消費支出ではなく非消費支出のため）。家計の合計や費目グラフには入れていません。</div></div>`;
+
+  if (ccTot > 0) h += `<div class="mini" style="margin-top:11px">
+    クレジットカードの引落し ${yen(ccTot)}円 は、カード明細ですでに1件ずつ数えているため、ここでは対象外にしています。</div>`;
+  if (atmTot > 0) h += `<div class="mini" style="margin-top:7px">
+    ATM・電子マネー ${yen(atmTot)}円 は、引き出しただけで使い道が分からないため対象外です。現金の使いみちは「入力」タブで記録してください。</div>`;
+
+  box.innerHTML = h;
+}
+
+function renderAdvice(tx) {
+  const bc = byCat(tx.filter(t => !t.sp));
+  const items = [];
+  CATN.forEach(c => {
+    const bm = benchScaled(c); if (!bm) return;
+    const d = (bc[c] || 0) - bm;
+    if (d > bm * 0.15 && d > 3000) items.push({ c, d, v: bc[c], bm });
+  });
+  items.sort((a, b) => b.d - a.d);
+
+  // 自分の直近3ヶ月平均との比較
+  const hist = [1, 2, 3].map(k => ymAdd(curYm, -k)).filter(isFinalized)
+    .map(m => byCat(txOfMonth(m).filter(t => !t.sp && !t.exp)));
+  const jump = [];
+  CATN.forEach(c => {
+    const vs = hist.map(h => h[c] || 0).filter(v => v > 0);
+    if (vs.length < 2) return;
+    const avg = vs.reduce((a, b) => a + b, 0) / vs.length;
+    const now = bc[c] || 0;
+    if (now > avg * 1.4 && now - avg > 5000) jump.push({ c, now, avg, d: now - avg });
+  });
+  jump.sort((a, b) => b.d - a.d);
+
+  let h = "";
+  if (!isFinalized(curYm)) {
+    h += `<div class="adv"><div class="h">この月はまだ確定していません</div>
+      <div class="b">カード会社にデータが届くのが遅れた分は、次の請求月のCSVに入ってきます。
+      ${ymLabel(ymAdd(curYm, 2))}分をよみこむと確定します。いまの金額は少なめに出ています。</div></div>`;
+  }
+  items.slice(0, 3).forEach(x => {
+    h += `<div class="adv"><div class="h">${esc(x.c)}が めやすより ${yen(x.d)}円 多め</div>
+      <div class="b">今月 ${yen(x.v)}円／めやす ${yen(x.bm)}円。ここを1割へらすと <b>月 ${yen(x.v * .1)}円</b>、
+      年間で <b>${yen(x.v * .1 * 12)}円</b> の節約になります。</div></div>`;
+  });
+  jump.slice(0, 2).forEach(x => {
+    h += `<div class="adv"><div class="h">${esc(x.c)}が いつもの月より ${yen(x.d)}円 多い</div>
+      <div class="b">直近平均 ${yen(x.avg)}円 → 今月 ${yen(x.now)}円。特別な出費でなければ見直しどきです。</div></div>`;
+  });
+  const sp = tx.filter(t => t.sp).sort((a, b) => b.amt - a.amt);
+  if (sp.length) {
+    h += `<div class="adv"><div class="h">特別費として分けている ${sp.length}件</div>
+      <div class="b">${sp.slice(0, 3).map(t => esc(t.name) + " " + yen(t.amt) + "円").join("／")}
+      <br>旅行や家電などの大きな出費は、ふだんの支出とは分けて見るのがコツです。明細でON/OFFできます。</div></div>`;
+  }
+  if (!h) h = `<div class="adv good"><div class="h">今月はめやすの範囲におさまっています</div>
+    <div class="b">この調子でいきましょう。</div></div>`;
+  $("advice").innerHTML = h;
+}
+
+/* ---- 収支 ---- */
+function monthSpend(ym) { return sum(txOfMonth(ym).filter(t => !t.exp)); }
+
+/* 支出がそろっているか。
+   銀行明細だけの月は、カードで買った分がまるごと抜けているので
+   「支出が少ない＝貯蓄できている」と誤解する原因になる。
+   カード明細がその月をカバーしているかで判定する。            */
+/* この家庭がクレジットカードを使っているか。
+   カード明細が1件もなくても、銀行明細にカードの引落しがあれば
+   「まだ読み込んでいないだけ」と分かる。ここを取り違えると、
+   銀行だけ入れた状態で「支出が少ない＝貯蓄できている」という
+   まったく逆の結論が出てしまう。                              */
+function usesCard() {
+  if (Object.keys(S.cards).length) return true;
+  return Object.values(S.bank).some(a =>
+    a.some(t => classifyBank(t.memo, t.dir).kind === "creditcard"));
+}
+function spendComplete(ym) {
+  if (!usesCard()) return true;                       // 本当にカードを使わない運用
+  if (S.basis === "stmt") return !!S.cards[ym];
+  return Object.values(S.cards).some(a => a.some(t => t.d.slice(0, 7) === ym));
+}
+
+function renderBalance() {
+  const ms = allMonths();
+  const inc = monthIncome(curYm), spend = monthSpend(curYm);
+  const bal = inc - spend;
+  const b = bankIncome(curYm);
+
+  let h = "";
+  if (!inc && !spend) { $("balBox").innerHTML = '<div class="empty"><span class="e">⚖️</span>明細を読み込むとここに出ます</div>'; }
+  else {
+    const ok = spendComplete(curYm);
+    // 支出がそろっていない月に「のこり」を出すと、実際よりずっと多く見えてしまう。
+    // 金額は伏せて、何をすれば出るのかだけを示す。
+    h += `<div class="bal ${ok ? (bal >= 0 ? "plus" : "minus") : "unknown"}">
+      <div class="lbl">${ymLabel(curYm)}の${ok ? (bal >= 0 ? "のこり" : "赤字") : "のこり"}</div>
+      ${ok
+        ? `<div class="big">${yen(Math.abs(bal))}<small>円</small></div>
+           <div style="font-size:11.5px;opacity:.92;margin-top:6px">
+             収入 ${yen(inc)}円 − 支出 ${yen(spend)}円</div>`
+        : `<div class="big" style="font-size:22px">まだ計算できません</div>
+           <div style="font-size:11.5px;opacity:.92;margin-top:6px">
+             カードの明細を入れると出ます</div>`}</div>`;
+    h += `<div class="ie">
+      <div><div class="v" style="color:#3FAE97">${yen(inc)}</div><div class="k">収入</div></div>
+      <div><div class="v" style="color:${ok ? "#D94B87" : "#9C8CA6"}">${yen(spend)}</div>
+        <div class="k">支出${ok ? "" : "（一部）"}</div></div></div>`;
+    if (inc > 0 && ok) {
+      const rate = bal / inc * 100;
+      h += `<div class="mini" style="margin-top:10px">
+        貯蓄率 <b style="font-size:14px;color:${rate >= 0 ? "#3FAE97" : "#D94B87"}">${rate.toFixed(1)}%</b>
+        　（のこり ÷ 収入）</div>`;
+    }
+    if (b.hasData) {
+      h += `<div class="mini" style="margin-top:9px">内訳: `
+        + b.items.map(t => `${esc(t.cat)} ${yen(t.amt)}円`).join("／") + `</div>`;
+      if (!S.incOther && b.other > 0)
+        h += `<div class="mini">※ 児童手当などの ${yen(b.other)}円 は収入に数えない設定です</div>`;
+    } else if (S.incomeSource === "bank") {
+      h += `<div class="adv" style="margin-top:10px"><div class="h">この月の入金が見つかりません</div>
+        <div class="b">銀行明細にこの月の給与が入っていないか、勤務先の判定文字が違う可能性があります。⚙️設定で確認できます。</div></div>`;
+    }
+    // 賞与月は収支が跳ねるので、12か月の均しも見せる
+    const last12 = ms.filter(m => m <= curYm && spendComplete(m)).slice(-12);
+    if (last12.length >= 3) {
+      const ti = last12.reduce((a, m) => a + monthIncome(m), 0);
+      const ts = last12.reduce((a, m) => a + monthSpend(m), 0);
+      h += `<div class="adv good" style="margin-top:11px"><div class="h">そろっている直近${last12.length}か月の平均</div>
+        <div class="b">収入 ${yen(ti / last12.length)}円 ／ 支出 ${yen(ts / last12.length)}円 ／
+        のこり <b>${yen((ti - ts) / last12.length)}円</b>（貯蓄率 ${ti ? ((ti - ts) / ti * 100).toFixed(1) : "-"}%）<br>
+        <span class="mini">賞与のある月は収支が大きく振れるので、ならした数字のほうが実感に近くなります。</span></div></div>`;
+    }
+    if (!spendComplete(curYm)) {
+      const none = !Object.keys(S.cards).length;
+      h += `<div class="adv" style="margin-top:11px"><div class="h">${none
+        ? "カードの明細をまだ読み込んでいません" : "この月はカードの明細がありません"}</div>
+        <div class="b">銀行の記録だけなので、カードで買った分がまるごと抜けています。
+        <b>支出は実際よりずっと少なく、のこりは多く見えています。</b>
+        ${none ? "⚙️設定の💳からカードのCSVを読み込むと正しくなります。"
+               : "この月のカードCSVを読み込むと正しくなります。"}</div></div>`;
+    }
+    $("balBox").innerHTML = h;
+  }
+
+  // --- 収入 vs 支出 の対比グラフ ---
+  const show = ms.filter(m => m <= curYm).slice(-12);
+  const data = show.map(m => ({ m, inc: monthIncome(m), sp: monthSpend(m), ok: spendComplete(m) }));
+  const mx = Math.max(1, ...data.map(d => Math.max(d.inc, d.sp)));
+  const W = Math.max(300, show.length * 56), H = 190, PB = 26;
+  const gw = W / show.length, bw = gw * 0.30;
+  let bars = "";
+  data.forEach((d, i) => {
+    const cx = (i + .5) * gw;
+    const hi = (d.inc / mx) * (H - PB - 16), hs = (d.sp / mx) * (H - PB - 16);
+    bars += `<rect x="${(cx - bw - 2).toFixed(1)}" y="${(H - PB - hi).toFixed(1)}" width="${bw.toFixed(1)}"
+      height="${hi.toFixed(1)}" fill="#5FCFB8" rx="3"></rect>`;
+    bars += `<rect x="${(cx + 2).toFixed(1)}" y="${(H - PB - hs).toFixed(1)}" width="${bw.toFixed(1)}"
+      height="${hs.toFixed(1)}" fill="#EF6FA4" rx="3"${d.ok ? "" : ' opacity=".32"'}></rect>`;
+    if (!d.ok) bars += `<text x="${(cx + 2 + bw / 2).toFixed(1)}" y="${(H - PB - hs - 4).toFixed(1)}"
+      text-anchor="middle" font-size="9" fill="#C9A7BC" font-weight="800">?</text>`;
+    bars += `<text x="${cx.toFixed(1)}" y="${H - PB + 13}" text-anchor="middle" font-size="10"
+      fill="#8A7791" font-weight="700">${Number(d.m.slice(5))}月</text>`;
+    if (d.ok && d.inc - d.sp !== 0) {
+      const ok = d.inc >= d.sp;
+      bars += `<text x="${cx.toFixed(1)}" y="${(H - PB - Math.max(hi, hs) - 5).toFixed(1)}" text-anchor="middle"
+        font-size="8.5" font-weight="800" fill="${ok ? "#3FAE97" : "#D94B87"}">${ok ? "+" : "−"}${Math.abs(d.inc - d.sp) >= 10000 ? (Math.abs(d.inc - d.sp) / 10000).toFixed(1) + "万" : yen(Math.abs(d.inc - d.sp))}</text>`;
+    }
+  });
+  $("ieChart").innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">${bars}</svg>`;
+  $("ieLeg").innerHTML = `
+    <span style="display:inline-flex;align-items:center;gap:5px;margin-right:12px;font-size:11px;font-weight:700">
+      <b style="width:11px;height:11px;border-radius:3px;background:#5FCFB8;display:inline-block"></b>収入</span>
+    <span style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700">
+      <b style="width:11px;height:11px;border-radius:3px;background:#EF6FA4;display:inline-block"></b>支出</span>`
+    + (data.some(x => !x.ok) ? `<div class="mini" style="margin-top:7px">
+      うすい棒に <b>?</b> が付いた月は、カードの明細がまだない月です。実際の支出はもっと多くなります。</div>` : "");
+
+  // --- 貯蓄率の推移 ---
+  const rates = data.map(d => (d.ok && d.inc > 0) ? (d.inc - d.sp) / d.inc * 100 : null);
+  const valid = rates.filter(r => r !== null);
+  if (!valid.length) {
+    const why = usesCard() && !Object.keys(S.cards).length
+      ? "カードの明細をまだ読み込んでいないので、貯蓄率は出せません。<br>銀行の記録だけだと、カードで買った分がまるごと抜けてしまうためです。"
+      : "収入のデータがまだありません。";
+    $("srChart").innerHTML = `<div class="empty" style="padding:14px"><span class="e">🐖</span>${why}</div>`;
+    $("srNote").innerHTML = ""; return;
+  }
+  const rmax = Math.max(30, ...valid), rmin = Math.min(0, ...valid);
+  const H2 = 150, PB2 = 24, span = (rmax - rmin) || 1;
+  const yOf = v => (H2 - PB2) - ((v - rmin) / span) * (H2 - PB2 - 16);
+  let pts = "", dots = "";
+  data.forEach((d, i) => {
+    if (rates[i] === null) return;
+    const x = (i + .5) * gw, y = yOf(rates[i]);
+    pts += `${x.toFixed(1)},${y.toFixed(1)} `;
+    dots += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3.5" fill="#FFC94D" stroke="#fff" stroke-width="1.5"></circle>`;
+    dots += `<text x="${x.toFixed(1)}" y="${(y - 8).toFixed(1)}" text-anchor="middle" font-size="8.5"
+      font-weight="800" fill="#8A7791">${rates[i].toFixed(0)}%</text>`;
+    dots += `<text x="${x.toFixed(1)}" y="${H2 - PB2 + 13}" text-anchor="middle" font-size="10"
+      fill="#8A7791" font-weight="700">${Number(d.m.slice(5))}月</text>`;
+  });
+  const zeroY = yOf(0);
+  $("srChart").innerHTML = `<svg viewBox="0 0 ${W} ${H2}" width="${W}" height="${H2}">
+    <line x1="0" y1="${zeroY.toFixed(1)}" x2="${W}" y2="${zeroY.toFixed(1)}" stroke="#E9DCE6" stroke-width="1.5"></line>
+    <polyline points="${pts}" fill="none" stroke="#FFC94D" stroke-width="2.5" stroke-linejoin="round"></polyline>
+    ${dots}</svg>`;
+  const avg = valid.reduce((a, b) => a + b, 0) / valid.length;
+  $("srNote").innerHTML = `<div class="mini">カードの明細がそろっている ${valid.length}か月の平均 <b>${avg.toFixed(1)}%</b>。
+    一般に手取りの15%前後が目安、ゆとりがあれば20〜25%といわれます。
+    ${avg >= 20 ? "十分に貯められています。" : avg >= 15 ? "目安の範囲です。" : avg >= 0 ? "もう少し余地がありそうです。" : "支出が収入を上回っています。"}</div>`;
+}
+
+/* ---- 推移 ---- */
+function renderTrend() {
+  const ms = allMonths().slice(-12);
+  const data = ms.map(m => { const a = txOfMonth(m), h = a.filter(t => !t.exp);
+    return { m, bc: byCat(h), tot: sum(h), ex: sum(a.filter(t => t.exp)) }; });
+  const anyEx = data.some(d => d.ex > 0);
+  const mx = Math.max(1, ...data.map(d => d.tot + d.ex));
+  const W = Math.max(300, ms.length * 52), H = 196, PB = 26;
+  const bw = W / ms.length * .62;
+  let bars = "";
+  data.forEach((d, i) => {
+    const x = (i + .5) * (W / ms.length) - bw / 2;
+    let y = H - PB;
+    CATN.forEach(c => {
+      const v = d.bc[c] || 0; if (v <= 0) return;
+      const hh = (v / mx) * (H - PB - 14);
+      y -= hh;
+      bars += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${hh.toFixed(1)}"
+        fill="${CATC[c]}" ${y === H - PB - hh ? 'rx="4"' : ""}></rect>`;
+    });
+    bars += `<text x="${(x + bw / 2).toFixed(1)}" y="${H - PB + 13}" text-anchor="middle"
+      font-size="10" fill="#8A7791" font-weight="700">${Number(d.m.slice(5))}月</text>`;
+    bars += `<text x="${(x + bw / 2).toFixed(1)}" y="${(y - 5).toFixed(1)}" text-anchor="middle"
+      font-size="9.5" fill="#463349" font-weight="800">${d.tot >= 10000 ? (d.tot / 10000).toFixed(1) + "万" : yen(d.tot)}</text>`;
+    if (d.ex > 0) {                       // 会社立替を薄く上に積む
+      const eh = (d.ex / mx) * (H - PB - 14);
+      y -= eh + 3;
+      bars += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}"
+        height="${eh.toFixed(1)}" fill="#8FA9C4" opacity=".3" rx="4"></rect>`;
+      bars += `<text x="${(x + bw / 2).toFixed(1)}" y="${(y - 4).toFixed(1)}" text-anchor="middle"
+        font-size="8.5" fill="#8FA9C4" font-weight="700">${d.ex >= 10000 ? (d.ex / 10000).toFixed(1) + "万" : yen(d.ex)}</text>`;
+    }
+  });
+  const inc = monthIncome(curYm);
+  let incLine = "";
+  if (inc > 0 && inc <= mx * 1.2) {
+    const y = (H - PB) - (inc / mx) * (H - PB - 14);
+    incLine = `<line x1="0" y1="${y.toFixed(1)}" x2="${W}" y2="${y.toFixed(1)}"
+      stroke="#5FCFB8" stroke-width="1.5" stroke-dasharray="5 4"></line>
+      <text x="4" y="${(y - 4).toFixed(1)}" font-size="9" fill="#3FAE97" font-weight="800">収入 ${yen(inc)}</text>`;
+  }
+  $("trendChart").innerHTML = `<svg viewBox="0 0 ${W} ${H + (anyEx ? 12 : 0)}" width="${W}" height="${H + (anyEx ? 12 : 0)}">${incLine}${bars}</svg>`;
+  $("trendLeg").innerHTML = (anyEx ? `<span style="display:inline-flex;align-items:center;gap:4px;margin:0 8px 5px 0;font-size:10.5px;color:#8FA9C4;font-weight:700">
+      <b style="width:11px;height:11px;border-radius:3px;background:#8FA9C4;opacity:.3;display:inline-block"></b>会社立替（家計外）</span>` : "")
+    + CATN.map(c =>
+    `<span style="display:inline-flex;align-items:center;gap:4px;margin:0 8px 5px 0;font-size:10.5px">
+      <b style="width:11px;height:11px;border-radius:3px;background:${CATC[c]};display:inline-block"></b>${esc(c)}</span>`).join("");
+
+  // 費目別ミニ推移
+  const sel = $("trendCat");
+  if (!sel.options.length) { sel.innerHTML = CATN.map(c => `<option>${esc(c)}</option>`).join(""); }
+  const c = sel.value || CATN[0];
+  const vs = data.map(d => d.bc[c] || 0), m2 = Math.max(1, ...vs);
+  const bm = benchScaled(c);
+  $("trendOne").innerHTML = data.map((d, i) => `
+    <div class="catrow"><div class="nm" style="width:52px">${Number(d.m.slice(5))}月</div>
+      <div class="track"><i style="width:${(vs[i] / m2 * 100).toFixed(1)}%;background:${CATC[c]}"></i>
+      ${bm ? `<span class="bm" style="left:${Math.min(99.5, bm / m2 * 100).toFixed(1)}%"></span>` : ""}</div>
+      <div class="amt">${yen(vs[i])}</div></div>`).join("");
+
+  // お店ランキング
+  const shop = {};
+  txOfMonth(curYm).filter(t => t.src === "card" && !t.exp).forEach(t => {
+    const k = mkey(t.name); if (!shop[k]) shop[k] = { n: 0, v: 0, c: t.cat };
+    shop[k].n++; shop[k].v += t.amt;
+  });
+  const top = Object.entries(shop).sort((a, b) => b[1].v - a[1].v).slice(0, 10);
+  $("topShops").innerHTML = top.length ? top.map(([k, o]) => `
+    <div class="tx"><div class="cc" style="background:${CATC[o.c] || "#ccc"}"></div>
+      <div class="mid"><div class="nm">${esc(k)}</div>
+        <div class="mt"><span class="tag">${esc(o.c)}</span><span>${o.n}回</span></div></div>
+      <div class="am">${yen(o.v)}</div></div>`).join("")
+    : '<div class="empty"><span class="e">🛍</span>まだデータがありません</div>';
+}
+
+/* ---- 明細 ---- */
+function renderDonut(rows) {
+  const box = $("donut");
+  const bc = {}; rows.forEach(t => bc[t.cat] = (bc[t.cat] || 0) + t.amt);
+  const arr = CATN.map(c => [c, bc[c] || 0]).filter(x => x[1] > 0).sort((a, b) => b[1] - a[1]);
+  const tot = arr.reduce((s, x) => s + x[1], 0);
+  if (!tot) { box.innerHTML = ""; return; }
+  const R = 58, SW = 26, C = 2 * Math.PI * R, cx = 75, cy = 75;
+  let off = 0, seg = "";
+  arr.forEach(([c, v]) => {
+    const len = v / tot * C;
+    seg += `<circle cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="${CATC[c]}"
+      stroke-width="${SW}" stroke-dasharray="${len.toFixed(2)} ${(C - len).toFixed(2)}"
+      stroke-dashoffset="${(-off).toFixed(2)}" transform="rotate(-90 ${cx} ${cy})"></circle>`;
+    off += len;
+  });
+  const big = tot >= 10000 ? (tot / 10000).toFixed(1) : Math.round(tot / 1000);
+  const unit = tot >= 10000 ? "万円" : "千円";
+  box.innerHTML = `<div class="dn">
+    <div class="sv"><svg viewBox="0 0 150 150">${seg}
+      <text x="${cx}" y="${cy - 3}" text-anchor="middle" font-size="24" font-weight="800" fill="#463349">${big}</text>
+      <text x="${cx}" y="${cy + 15}" text-anchor="middle" font-size="11" font-weight="700" fill="#8A7791">${unit}</text>
+    </svg></div>
+    <div class="lg">${arr.map(([c, v]) => `<div class="li">
+      <b style="background:${CATC[c]}"></b><span class="n">${esc(c)}</span>
+      <span class="p">${yen(v)} ・ ${(v / tot * 100).toFixed(0)}%</span></div>`).join("")}</div></div>`;
+}
+
+let selMode = false;
+const selSet = new Set();
+function txRow(t, compact) {
+  return `<div class="tx${t.exp ? " isexp" : ""}" data-id="${esc(t.id)}">
+    ${selMode ? `<input type="checkbox" class="ck" data-ck="${esc(t.id)}"${selSet.has(t.id) ? " checked" : ""}>` : ""}
+    <div class="cc" style="background:${t.exp ? "#B9CBDE" : (CATC[t.cat] || "#ccc")}"></div>
+    <div class="mid"><div class="nm">${esc(t.name || "(名称なし)")}</div>
+      <div class="mt">${compact ? "" : `<span>${t.d.slice(5).replace("-", "/")}</span>`}
+        <span class="tag">${esc(t.cat)}</span>
+        ${t.src === "cash" ? '<span class="tag cash">現金</span>' : ""}
+        ${t.src === "fixed" ? '<span class="tag fixed">固定費</span>' : ""}
+        ${t.src === "bank" ? `<span class="tag bank">銀行${t.bankKind === "income" ? "・収入" : t.bankKind === "creditcard" ? "・カード引落し" : t.bankKind === "atm" ? "・ATM等" : t.bankKind === "tax" ? "・税金等" : ""}</span>` : ""}
+        ${t.who && t.src === "card" ? `<span>${esc(t.who)}</span>` : ""}
+        ${t.fx ? `<span class="tag fx">${t.fx.amt}×${(t.amt / t.fx.amt).toFixed(2)}</span>` : ""}
+        ${t.sp && !t.exp ? '<span class="tag sp">特別費</span>' : ""}
+        ${t.exp && t.src !== "bank" ? '<span class="tag exp">会社立替</span>' : ""}
+      </div></div>
+    <div class="am">${yen(t.amt)}</div></div>`;
+}
+function renderList() {
+  const tx = txOfMonth(curYm);
+  const isSp = autoSpecial(tx, curYm);
+  tx.forEach(t => { if (S.special[t.id] === undefined) t.sp = isSp(t); });
+  const fc = $("fCat").value, fw = $("fWho").value, kw = $("fKw").value.trim(),
+        fu = $("fUse").value;
+  const f = tx.filter(t => (!fc || t.cat === fc) && (!fw || t.who === fw)
+    && (!kw || t.name.indexOf(kw) >= 0)
+    && (!fu || (fu === "exp" ? t.exp : !t.exp)));
+  const home = f.filter(t => !t.exp), ex = f.filter(t => t.exp);
+  renderDonut(fu === "exp" ? ex : home);
+  $("txList").innerHTML = f.length
+    ? `<div class="mini" style="margin:8px 0">${f.length}件 ・ 家計 ${yen(sum(home))}円`
+      + (ex.length ? ` ／ 立替 ${yen(sum(ex))}円` : "")
+      + `<br>${selMode ? "チェックしてから下のボタン" : "タップで費目や立替をなおす"}</div>`
+      + f.map(t => txRow(t)).join("")
+    : '<div class="empty"><span class="e">🔎</span>該当なし</div>';
+
+  if (selMode) {
+    $("txList").querySelectorAll("[data-ck]").forEach(cb => cb.onclick = e => {
+      e.stopPropagation();
+      cb.checked ? selSet.add(cb.dataset.ck) : selSet.delete(cb.dataset.ck);
+      drawSelBar(f);
+    });
+    $("txList").querySelectorAll(".tx").forEach(el => el.onclick = () => {
+      const cb = el.querySelector("[data-ck]"); if (!cb) return;
+      cb.checked = !cb.checked;
+      cb.checked ? selSet.add(cb.dataset.ck) : selSet.delete(cb.dataset.ck);
+      drawSelBar(f);
+    });
+    drawSelBar(f);
+  } else {
+    $("txList").querySelectorAll(".tx").forEach(el => el.onclick = () => openEdit(el.dataset.id, tx));
+    $("selBar").style.display = "none";
+  }
+}
+function drawSelBar(f) {
+  const bar = $("selBar");
+  const picked = f.filter(t => selSet.has(t.id));
+  bar.style.display = "block";
+  bar.className = "selbar";
+  bar.innerHTML = `<div class="in">
+    <div style="font-size:12.5px;font-weight:800">${picked.length}件えらび中 ・ ${yen(sum(picked))}円</div>
+    <div class="r">
+      <button class="btn sm" id="sbExp" style="width:100%"${picked.length ? "" : " disabled"}>会社立替にする</button>
+      <button class="btn sub sm" id="sbHome" style="width:100%"${picked.length ? "" : " disabled"}>家計にもどす</button>
+    </div>
+    <div class="r">
+      <button class="btn sub sm" id="sbAll" style="width:100%">表示中をぜんぶ選ぶ</button>
+      <button class="btn sub sm" id="sbEnd" style="width:100%">やめる</button>
+    </div></div>`;
+  $("sbExp").onclick = () => { picked.forEach(t => S.exp[t.id] = true); afterBulk("会社立替にしました"); };
+  $("sbHome").onclick = () => { picked.forEach(t => S.exp[t.id] = false); afterBulk("家計にもどしました"); };
+  $("sbAll").onclick = () => { f.forEach(t => selSet.add(t.id)); renderList(); };
+  $("sbEnd").onclick = () => { selMode = false; selSet.clear(); $("selBtn").textContent = "まとめて選ぶ"; renderAll(); };
+}
+function afterBulk(msg) {
+  selSet.clear(); save(); renderAll(); toast(msg);
+}
+function closeSheet() {
+  $("sheet").classList.remove("on"); $("ovl").classList.remove("on");
+}
+function openEdit(id, tx) {
+  const t = tx.find(x => x.id === id); if (!t) return;
+  const k = t.src === "card" ? mkey(t.name) : "";
+  const alwaysExp = k && !!S.expRules[k];
+  $("sheetBody").innerHTML = `
+    <div class="hd">${esc(t.name || "(名称なし)")}
+      <small>${t.d.slice(5).replace("-", "/")} ・ ${yen(t.amt)}円
+        ${t.src === "cash" ? "・現金" : t.src === "fixed" ? "・固定費" : t.who ? "・" + esc(t.who) : ""}</small></div>
+    <div class="mini" style="margin-top:11px">費目をえらぶ</div>
+    <div class="cgrid">${CATN.map(c => `<button class="cbtn${c === t.cat ? " on" : ""}" data-c="${esc(c)}">
+      <b style="background:${CATC[c]}"></b>${esc(c)}</button>`).join("")}</div>
+    ${t.src === "card" ? `<div class="mini" style="margin-bottom:4px">
+      えらぶと「${esc(k)}」は次からもその費目になります</div>` : ""}
+    ${t.src === "bank" && t.bankLabel ? `<div class="mini" style="margin-bottom:4px">自動判定: ${esc(t.bankLabel)}</div>` : ""}
+    <div class="srow"><div class="t">特別費にする
+      <small>旅行・家電など、いつもは起きない大きな出費</small></div>
+      <label class="tg"><input type="checkbox" id="shSp"${t.sp ? " checked" : ""}><i></i></label></div>
+    ${t.src === "bank" ? `
+    <div class="srow"><div class="t">家計の支出・収入として数える
+      <small>クレジットの引落しやATM・税金は、二重計上をさけるため既定でOFFです</small></div>
+      <label class="tg"><input type="checkbox" id="shBk"${t.exp ? "" : " checked"}><i></i></label></div>` : `
+    <div class="srow"><div class="t">会社立替にする
+      <small>あとで会社から戻ってくる分。家計から外れます</small></div>
+      <label class="tg"><input type="checkbox" id="shEx"${t.exp ? " checked" : ""}><i></i></label></div>`}
+    ${t.src === "card" ? `<div class="srow"><div class="t">このお店はいつも会社立替
+      <small>${esc(k)} を今後ぜんぶ立替にします</small></div>
+      <label class="tg"><input type="checkbox" id="shER"${alwaysExp ? " checked" : ""}><i></i></label></div>` : ""}
+    <button class="btn sub" id="shClose" style="margin-top:14px">とじる</button>`;
+
+  $("sheet").classList.add("on"); $("ovl").classList.add("on");
+
+  $("sheetBody").querySelectorAll("[data-c]").forEach(b => b.onclick = () => {
+    const nc = b.dataset.c;
+    if (t.src === "card") { S.rules[k] = nc; toast(`「${k}」を${nc}にしました`); }
+    else if (t.src === "cash") { const c = S.cash.find(c => "c:" + c.id === t.id); if (c) c.cat = nc; toast(`${nc}にしました`); }
+    else if (t.src === "fixed") { const f = S.fixed.find(f => f.id === t.id.split(":")[1]); if (f) f.cat = nc; toast(`${nc}にしました`); }
+    save(); closeSheet(); renderAll(); renderRules();
+  });
+  $("shSp").onchange = e => {
+    S.special[t.id] = e.target.checked; save(); renderAll();
+    toast(e.target.checked ? "特別費にしました" : "ふだんの支出にもどしました");
+  };
+  const shEx = $("shEx");
+  if (shEx) shEx.onchange = e => {
+    S.exp[t.id] = e.target.checked; save(); renderAll();
+    toast(e.target.checked ? "会社立替にしました" : "家計にもどしました");
+  };
+  const shBk = $("shBk");
+  if (shBk) shBk.onchange = e => {
+    S.bankSkip[t.id] = !e.target.checked; save(); renderAll();
+    toast(e.target.checked ? "家計に数えるようにしました" : "家計から外しました");
+  };
+  const er = $("shER");
+  if (er) er.onchange = e => {
+    if (e.target.checked) S.expRules[k] = true; else delete S.expRules[k];
+    delete S.exp[t.id];
+    save(); renderAll();
+    toast(e.target.checked ? `「${k}」は今後いつも立替にします` : "自動立替をやめました");
+  };
+  $("shClose").onclick = closeSheet;
+}
+
+/* ---- 現金 ---- */
+function renderCash() {
+  const list = S.cash.filter(c => c.date.slice(0, 7) === curYm).sort((a, b) => b.date.localeCompare(a.date));
+  $("cashList").innerHTML = list.length
+    ? `<div class="mini" style="margin-bottom:5px">${ymLabel(curYm)}の現金 ${yen(list.reduce((s, c) => s + Number(c.amount), 0))}円</div>`
+      + list.map(c => `<div class="frow"><div class="cc" style="width:9px;height:30px;border-radius:99px;background:${CATC[c.cat]}"></div>
+        <div class="mid"><div class="nm">${esc(c.name)}</div>
+          <div class="mt">${c.date.slice(5).replace("-", "/")} ・ ${esc(c.cat)}</div></div>
+        <div class="am">${yen(c.amount)}</div>
+        <button class="btn sub sm" data-del="${c.id}">消す</button></div>`).join("")
+    : '<div class="empty" style="padding:16px"><span class="e">💴</span>この月の現金記録はまだありません</div>';
+  $("cashList").querySelectorAll("[data-del]").forEach(b => b.onclick = () => {
+    if (!confirm("この記録を消しますか？")) return;
+    S.cash = S.cash.filter(c => c.id !== b.dataset.del); save(); renderAll(); toast("消しました");
+  });
+}
+
+/* ---- 固定費 ---- */
+function renderFixed() {
+  if (!S.fixed.length) {
+    $("fixList").innerHTML = '<div class="empty" style="padding:16px"><span class="e">🏡</span>家賃・保険・習いごとなどを登録しましょう</div>';
+    return;
+  }
+  $("fixList").innerHTML = S.fixed.map(f => {
+    const on = fixedActive(f, curYm);
+    const period = (f.st ? ymLabel(f.st) : "ずっと") + "〜" + (f.ed ? ymLabel(f.ed) + "で終了" : "");
+    return `<div class="frow${on ? "" : " off"}">
+      <div class="cc" style="width:9px;height:32px;border-radius:99px;background:${CATC[f.cat]}"></div>
+      <div class="mid"><div class="nm">${esc(f.name)}</div>
+        <div class="mt">${esc(f.cat)} ・ ${period}</div></div>
+      <div class="am">${yen(f.amount)}</div>
+      <label class="tg"><input type="checkbox" data-fx="${f.id}"${on ? " checked" : ""}><i></i></label>
+      <button class="btn sub sm" data-fdel="${f.id}" style="padding:6px 9px">✕</button></div>`;
+  }).join("");
+  $("fixList").querySelectorAll("[data-fx]").forEach(cb => cb.onchange = () => {
+    const f = S.fixed.find(f => f.id === cb.dataset.fx); if (!f) return;
+    if (!cb.checked) { f.ed = curYm; toast(`${ymLabel(curYm)}で終了。翌月から出てきません`); }
+    else {
+      f.ed = null;
+      if (f.st && curYm < f.st) f.st = curYm;
+      toast("また計上します");
+    }
+    save(); renderAll();
+  });
+  $("fixList").querySelectorAll("[data-fdel]").forEach(b => b.onclick = () => {
+    if (!confirm("この固定費を完全に消しますか？（過去の集計からも消えます）")) return;
+    S.fixed = S.fixed.filter(f => f.id !== b.dataset.fdel); save(); renderAll(); toast("消しました");
+  });
+}
+
+/* ---- ルール一覧 ---- */
+function renderRules() {
+  const ks = Object.keys(S.rules);
+  $("ruleList").innerHTML = ks.length ? ks.map(k =>
+    `<div class="frow"><div class="mid"><div class="nm" style="font-size:12.5px">${esc(k)}</div></div>
+      <div class="mt"><span class="tag">${esc(S.rules[k])}</span></div>
+      <button class="btn sub sm" data-rdel="${esc(k)}" style="padding:6px 9px">✕</button></div>`).join("")
+    : '<div class="mini" style="padding:8px 0">まだありません</div>';
+  $("ruleList").querySelectorAll("[data-rdel]").forEach(b => b.onclick = () => {
+    delete S.rules[b.dataset.rdel]; save(); renderAll(); renderRules();
+  });
+}
+
+/* ---- ベンチマーク編集 ---- */
+function renderBench() {
+  $("benchList").innerHTML = CATN.map(c => `
+    <div class="frow"><div class="mid"><div class="nm" style="font-size:12.5px">${esc(c)}</div></div>
+      <input type="number" inputmode="numeric" data-b="${esc(c)}" value="${S.bench[c] || 0}"
+        style="width:110px;padding:7px 9px;font-size:14px"></div>`).join("");
+}
+
+/* =========================================================
+   8. AI 分析
+   ========================================================= */
+function buildPrompt() {
+  const all = txOfMonth(curYm);
+  const tx = all.filter(t => !t.exp), bc = byCat(tx), tot = sum(tx), inc = monthIncome(curYm);
+  const exTot = sum(all.filter(t => t.exp));
+  const sp = tx.filter(t => t.sp);
+  const prev = [1, 2, 3].map(k => ({ m: ymAdd(curYm, -k), v: sum(txOfMonth(ymAdd(curYm, -k))) })).filter(x => x.v > 0);
+  const shops = {};
+  tx.filter(t => t.src === "card").forEach(t => { const k = mkey(t.name); shops[k] = (shops[k] || 0) + t.amt; });
+  const top = Object.entries(shops).sort((a, b) => b[1] - a[1]).slice(0, 12);
+  return `あなたは家計アドバイザーです。以下の家計データを見て、日本語でやさしく、具体的にアドバイスしてください。
+
+【${ymLabel(curYm)}】
+月の手取り収入: ${inc ? yen(inc) + "円（年俸制・毎月一定）" : "未設定"}
+支出合計: ${yen(tot)}円${inc ? `（収入比 ${(tot / inc * 100).toFixed(0)}%、収支 ${yen(inc - tot)}円）` : ""}
+世帯人数: ${S.people}人
+データの確定状況: ${isFinalized(curYm) ? "確定済み" : "未確定（遅れて届く利用分がまだ入っていないため、実際はこれより多い）"}
+${exTot ? `※このほかに会社の立替 ${yen(exTot)}円 があるが、あとで会社から補填されるため上の数字には含めていない。アドバイスでも触れないこと。` : ""}
+
+費目別（円）／かっこ内は「神奈川・大人2人＋子供3人（中1・小4・年少前）」のめやす:
+${CATN.map(c => `- ${c}: ${yen(bc[c] || 0)}（めやす ${yen(benchScaled(c))}）`).join("\n")}
+
+特別費として分けている分: ${sp.length ? sp.map(t => `${t.name} ${yen(t.amt)}円`).join("、") : "なし"}
+直近の支出合計: ${prev.length ? prev.map(p => `${ymLabel(p.m)} ${yen(p.v)}円`).join("、") : "データなし"}
+支出の大きいお店: ${top.map(([k, v]) => `${k} ${yen(v)}円`).join("、")}
+
+出力ルール:
+1. 冒頭に「今月のひとこと」を2文以内で。
+2. 次に「ここを抑えよう」を3つ。それぞれ ①費目名 ②今いくらか ③具体的にどうすればいくら減るか（月額と年額の両方を円で）を書く。
+3. 最後に「がんばっているところ」を1つ、ほめる。
+4. 特別費（旅行・家電など）は一時的な支出として扱い、恒常的な無駄と混同しない。
+5. 家族が読むので、専門用語は使わず、やわらかい言葉で。全体で400字程度。`;
+}
+
+/* APIキーがあれば端末から直接、なければ実行環境のプロキシ経由で呼ぶ */
+async function callClaude(prompt, maxTokens) {
+  const h = { "Content-Type": "application/json" };
+  if (S.apiKey) {
+    h["x-api-key"] = S.apiKey;
+    h["anthropic-version"] = "2023-06-01";
+    h["anthropic-dangerous-direct-browser-access"] = "true";
+  }
+  const r = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST", headers: h,
+    body: JSON.stringify({ model: "claude-sonnet-4-6", max_tokens: maxTokens || 1000,
+      messages: [{ role: "user", content: prompt }] })
+  });
+  if (!r.ok) {
+    let m = "HTTP " + r.status;
+    try { const e = await r.json(); if (e.error && e.error.message) m = e.error.message; } catch (x) {}
+    throw new Error(m);
+  }
+  return await r.json();
+}
+
+async function runAI() {
+  const btn = $("aiBtn"), out = $("aiOut");
+  btn.disabled = true; btn.textContent = "考えています…";
+  out.innerHTML = '<div class="mini">分析中…</div>';
+  try {
+    const d = await callClaude(buildPrompt());
+    const text = (d.content || []).filter(x => x.type === "text").map(x => x.text).join("\n").trim();
+    if (!text) throw new Error("空の返答");
+    out.innerHTML = `<div class="ai">${esc(text)}</div>`;
+    $("aiBox").style.display = "none"; $("aiHint").style.display = "none";
+  } catch (e) {
+    out.innerHTML = `<div class="adv"><div class="h">ここでは分析できませんでした</div>
+      <div class="b">${S.apiKey
+        ? "APIキーでの接続に失敗しました：" + esc(e.message) + "<br>設定でキーを確認してください。"
+        : "この画面はAIに直接つながっていません。設定でAPIキーを入れるか、下のボタンでメモをコピーしてClaudeアプリに貼り付けてください。"}</div></div>`;
+    $("aiBox").style.display = "grid"; $("aiHint").style.display = "block";
+  }
+  btn.disabled = false; btn.textContent = "今月を分析してもらう";
+}
+
+/* =========================================================
+   9. 保存・入出力
+   ========================================================= */
+let saveT = null;
+function save() { clearTimeout(saveT); saveT = setTimeout(() => Store.save(S), 200); }
+
+function exportJSON() {
+  const safe = Object.assign({}, S); delete safe.apiKey;   // キーは書き出さない
+  const text = JSON.stringify(safe, null, 1);
+  const fname = `kakeibo_backup_${new Date().toISOString().slice(0, 10)}.json`;
+  // アプリ版はWebViewなのでブラウザのダウンロードが使えない。端末側に橋渡しする。
+  if (window.AndroidBridge && window.AndroidBridge.saveText) {
+    try { toast(window.AndroidBridge.saveText(fname, text) || "書き出しました"); return; }
+    catch (e) { /* 失敗時は下のブラウザ方式へ */ }
+  }
+  const blob = new Blob([text], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = fname;
+  a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 3000);
+  toast("書き出しました");
+}
+
+/* =========================================================
+   10. 起動
+   ========================================================= */
+function go(p) {
+  document.querySelectorAll("section.page").forEach(s => s.classList.toggle("on", s.id === "p-" + p));
+  document.querySelectorAll("nav.tabs button").forEach(b => b.classList.toggle("on", b.dataset.p === p));
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function fillCatSelects() {
+  const opts = CATN.map(c => `<option>${esc(c)}</option>`).join("");
+  $("cCat").innerHTML = opts;
+  $("xCat").innerHTML = opts;
+  $("fCat").innerHTML = '<option value="">ぜんぶの費目</option>' + opts;
+  $("trendCat").innerHTML = opts;
+}
+
+/* 旧バージョンは行番号でフラグを持っていたので、いまの並び順で読み替える */
+function migrateIds() {
+  const old = /^\d{4}-\d{2}\|\d+$/;
+  const need = [...Object.keys(S.exp), ...Object.keys(S.special)].some(k => old.test(k));
+  if (!need) return;
+  const map = {};
+  Object.keys(S.cards).forEach(ym => {
+    const seen = {};
+    (S.cards[ym] || []).forEach((t, i) => { map[ym + "|" + i] = cardTxId(ym, t, seen); });
+  });
+  ["exp", "special"].forEach(f => {
+    const nx = {};
+    Object.keys(S[f]).forEach(k => { nx[old.test(k) ? (map[k] || k) : k] = S[f][k]; });
+    S[f] = nx;
+  });
+  save();
+}
+
+async function boot() {
+  const saved = await Store.load();
+  if (saved) {
+    Object.assign(S, saved, { bench: Object.assign({}, BENCH0, saved.bench || {}) });
+    // 旧バージョンは年額で保存していたので月額に直す
+    if (!saved.incomeMonthly) {
+      Object.keys(S.income).forEach(y => {
+        if (Number(S.income[y]) > 1000000) S.income[y] = Math.round(Number(S.income[y]) / 12);
+      });
+      S.incomeMonthly = true;
+    }
+  }
+  migrateIds();
+  fillCatSelects();
+  const ms = allMonths(); curYm = ms[ms.length - 1];
+
+  $("pv").onclick = () => { curYm = ymAdd(curYm, -1); selDay = null; renderAll(); };
+  $("nx").onclick = () => { curYm = ymAdd(curYm, 1); selDay = null; renderAll(); };
+  $("todayBtn").onclick = () => { curYm = thisYm(); selDay = null; renderAll(); };
+  $("ovl").onclick = closeSheet;
+  document.querySelectorAll("nav.tabs button").forEach(b => b.onclick = () => go(b.dataset.p));
+
+  // CSV
+  async function readCSVText(f) {
+    const buf = await f.arrayBuffer();
+    let txt = new TextDecoder("utf-8").decode(buf);
+    if (txt.indexOf("利用日") < 0 && txt.indexOf("お取引日付") < 0) txt = new TextDecoder("shift_jis").decode(buf);
+    return txt;
+  }
+
+  $("csvCard").onchange = async e => {
+    const log = [];
+    for (const f of [...e.target.files]) {
+      try {
+        const txt = await readCSVText(f);
+        if (isBankCSV(parseCSV(txt)))
+          throw new Error("これは銀行の明細のようです。下の🏦のほうで読み込んでください。");
+        const r = importEnavi(txt, f.name);
+        const cur = S.cards[r.ym] || [];
+        const m = mergeByCount(cur, r.items, cardKey);
+        S.cards[r.ym] = m.out;
+        log.push(`<div class="adv good"><div class="h">${ymLabel(r.ym)}（カード）</div>
+          <div class="b">${m.added ? `<b>${m.added}件</b>を新しく追加しました。` : "新しい明細はありませんでした。"}
+          ${m.kept ? `もともとの${m.kept}件はそのまま残っています。` : ""}<br>
+          <span class="mini">この請求月の合計 ${yen(sum(cardsOf(r.ym)))}円 ／ 明細書の「ご請求金額」と一致するか確認してください。</span></div></div>`);
+      } catch (err) {
+        log.push(`<div class="adv"><div class="h">${esc(f.name)} は読めませんでした</div>
+          <div class="b">${esc(err.message)}</div></div>`);
+      }
+    }
+    $("impLog").innerHTML = log.join("");
+    save(); const ms2 = allMonths(); curYm = ms2[ms2.length - 1];
+    renderAll(); e.target.value = "";
+  };
+
+  $("csvBank").onchange = async e => {
+    const log = [];
+    for (const f of [...e.target.files]) {
+      try {
+        const txt = await readCSVText(f);
+        if (!isBankCSV(parseCSV(txt)))
+          throw new Error("これは楽天カードの明細のようです。上の💳のほうで読み込んでください。");
+        const r = importBankCSV(txt, f.name);
+        let added = 0, months = 0;
+        Object.keys(r.byYm).forEach(ym => {
+          const m = mergeByCount(S.bank[ym] || [], r.byYm[ym], bankKey);
+          if (m.added) months++;
+          added += m.added;
+          S.bank[ym] = m.out;
+        });
+        log.push(`<div class="adv good"><div class="h">${esc(f.name)}（銀行）</div>
+          <div class="b">${added ? `<b>${added}件</b>を新しく追加しました（${months}か月ぶん）。` : "新しい明細はありませんでした。"}<br>
+          <span class="mini">ファイルの範囲 ${r.range[0]}〜${r.range[1]}／読み取り${r.total}件。
+          クレジット引落し・ATM・給与などは家計の支出には数えていません。</span></div></div>`);
+      } catch (err) {
+        log.push(`<div class="adv"><div class="h">${esc(f.name)} は読めませんでした</div>
+          <div class="b">${esc(err.message)}</div></div>`);
+      }
+    }
+    $("impLog").innerHTML = log.join("");
+    save(); const ms2 = allMonths(); curYm = ms2[ms2.length - 1];
+    renderAll(); e.target.value = "";
+  };
+
+  // 現金
+  const today = new Date().toISOString().slice(0, 10);
+  $("cDate").value = today;
+  $("cAdd").onclick = () => {
+    const a = Number($("cAmt").value), n = $("cNm").value.trim(), d = $("cDate").value;
+    if (!d || !a || a <= 0) { toast("日にちと金額を入れてください"); return; }
+    S.cash.push({ id: uid(), date: d, name: n || "現金", amount: a, cat: $("cCat").value });
+    $("cAmt").value = ""; $("cNm").value = "";
+    curYm = d.slice(0, 7);
+    save(); renderAll(); toast("記録しました ♡");
+  };
+
+  // 固定費
+  $("xSt").value = curYm;
+  $("xAdd").onclick = () => {
+    const n = $("xNm").value.trim(), a = Number($("xAmt").value);
+    if (!n || !a) { toast("名前と金額を入れてください"); return; }
+    S.fixed.push({ id: uid(), name: n, amount: a, cat: $("xCat").value,
+      st: $("xSt").value || null, ed: $("xEd").value || null });
+    $("xNm").value = ""; $("xAmt").value = "";
+    save(); renderAll(); toast("固定費を追加しました");
+  };
+
+  // 設定
+  const yNow = new Date().getFullYear();
+  $("sIncY").value = yNow;
+  $("sInc").value = S.income[yNow] || "";
+  $("sPpl").value = S.people;
+  $("sBasis").value = S.basis;
+  $("sIncSrc").value = S.incomeSource;
+  $("sEmp").value = S.employer || "";
+  $("sIncOther").checked = !!S.incOther;
+
+  const showYear = () => {
+    const v = Number($("sInc").value) || 0;
+    $("incYear").textContent = v ? `年額のめやす ${yen(v * 12)}円（月額 × 12）` : "";
+  };
+  const showIncMode = () => {
+    const bank = $("sIncSrc").value === "bank";
+    $("bankIncBox").style.display = bank ? "block" : "none";
+    $("manualIncBox").style.display = bank ? "none" : "block";
+  };
+  $("sInc").oninput = showYear;
+  $("sIncY").onchange = () => { $("sInc").value = S.income[$("sIncY").value] || ""; showYear(); };
+  $("sIncSrc").onchange = showIncMode;
+  showYear(); showIncMode();
+
+  $("sSave").onclick = () => {
+    const y = $("sIncY").value, v = Number($("sInc").value);
+    if (y && v) S.income[y] = v;
+    S.people = Number($("sPpl").value) || 2;
+    S.basis = $("sBasis").value;
+    S.incomeSource = $("sIncSrc").value;
+    S.employer = $("sEmp").value.trim();
+    S.incOther = $("sIncOther").checked;
+    showYear(); save(); renderAll(); toast("保存しました");
+  };
+  $("bSave").onclick = () => {
+    $("benchList").querySelectorAll("[data-b]").forEach(i => S.bench[i.dataset.b] = Number(i.value) || 0);
+    save(); renderAll(); toast("めやすを保存しました");
+  };
+
+  // フィルタ
+  ["fCat", "fWho", "fUse"].forEach(id => $(id).onchange = renderList);
+  $("fKw").oninput = renderList;
+  $("selBtn").onclick = () => {
+    selMode = !selMode; selSet.clear();
+    $("selBtn").textContent = selMode ? "選ぶのをやめる" : "まとめて選ぶ";
+    renderList();
+  };
+  $("trendCat").onchange = renderTrend;
+
+  // AI
+  $("aiBtn").onclick = runAI;
+  $("aiCopy").onclick = async () => {
+    const t = buildPrompt();
+    try { await navigator.clipboard.writeText(t); toast("コピーしました。②Claudeをひらいて貼り付け"); }
+    catch (e) { prompt("下のテキストをコピーしてください", t); }
+  };
+
+  // バックアップ
+  $("sKey").value = S.apiKey || "";
+  $("kSave").onclick = () => {
+    S.apiKey = $("sKey").value.trim(); save();
+    $("kMsg").innerHTML = S.apiKey
+      ? '<div class="adv good"><div class="b">保存しました。分析ボタンがこの端末で動きます。</div></div>'
+      : '<div class="mini">キーを消しました。分析はコピー方式になります。</div>';
+  };
+  $("kTest").onclick = async () => {
+    const k = $("sKey").value.trim();
+    if (!k) { $("kMsg").innerHTML = '<div class="mini">先にキーを入れてください。</div>'; return; }
+    const bak = S.apiKey; S.apiKey = k;
+    $("kMsg").innerHTML = '<div class="mini">ためしています…</div>';
+    try {
+      await callClaude("「テスト成功」とだけ返してください。", 16);
+      S.apiKey = k; save();
+      $("kMsg").innerHTML = '<div class="adv good"><div class="h">つながりました</div><div class="b">キーを保存しました。</div></div>';
+      $("sKey").value = k;
+    } catch (e) {
+      S.apiKey = bak;
+      $("kMsg").innerHTML = `<div class="adv"><div class="h">つながりませんでした</div><div class="b">${esc(e.message)}</div></div>`;
+    }
+  };
+
+  $("expBtn").onclick = exportJSON;
+  if (window.AndroidBridge && window.AndroidBridge.shareText) {
+    const sb = $("shareBtn");
+    sb.style.display = "block";
+    sb.onclick = () => {
+      const safe = Object.assign({}, S); delete safe.apiKey;
+      window.AndroidBridge.shareText(
+        `kakeibo_backup_${new Date().toISOString().slice(0, 10)}.json`,
+        JSON.stringify(safe, null, 1));
+    };
+  }
+  $("impBtn").onclick = () => $("jsonIn").click();
+  function applyBackup(text) {
+    const o = JSON.parse(text);
+    if (!o.version) throw new Error("家計簿のデータではないようです");
+    const nCard = Object.values(o.cards || {}).reduce((a, v) => a + v.length, 0);
+    const nBank = Object.values(o.bank || {}).reduce((a, v) => a + v.length, 0);
+    const msg = `読み込む内容\n\n`
+      + `・カード明細 ${nCard}件\n`
+      + `・銀行明細 ${nBank}件\n`
+      + `・固定費 ${(o.fixed || []).length}件\n`
+      + `・現金の記録 ${(o.cash || []).length}件\n`
+      + `・おみせの分類 ${Object.keys(o.rules || {}).length}件\n\n`
+      + `いまのデータは置きかわります。よろしいですか？`;
+    if (!confirm(msg)) return null;
+    const keep = S.apiKey;
+    Object.assign(S, o, { bench: Object.assign({}, BENCH0, o.bench || {}), apiKey: keep });
+    migrateIds();
+    save();
+    const m = allMonths(); curYm = m[m.length - 1];
+    renderAll(); renderRules(); renderBench();
+    return { nCard, nBank };
+  }
+
+  $("jsonIn").onchange = async e => {
+    const f = e.target.files[0]; if (!f) return;
+    try {
+      const r = applyBackup(await f.text());
+      if (r) toast("読み込みました");
+    } catch (err) { toast("読み込めませんでした：" + err.message); }
+    e.target.value = "";
+  };
+
+  $("pasteBtn").onclick = () => {
+    const t = $("pasteIn").value.trim();
+    if (!t) { $("pasteMsg").innerHTML = '<div class="mini">まず文字を貼り付けてください。</div>'; return; }
+    try {
+      const r = applyBackup(t);
+      if (r) {
+        $("pasteMsg").innerHTML = `<div class="adv good"><div class="h">引きつぎました</div>
+          <div class="b">カード${r.nCard}件・銀行${r.nBank}件を読み込みました。</div></div>`;
+        $("pasteIn").value = "";
+      }
+    } catch (err) {
+      $("pasteMsg").innerHTML = `<div class="adv"><div class="h">読み込めませんでした</div>
+        <div class="b">${esc(err.message)}<br>
+        <span class="mini">「{」ではじまり「}」でおわる文字を、とちゅうで切らずに全部貼り付けてください。</span></div></div>`;
+    }
+  };
+
+  renderBench(); renderRules(); renderAll();
+}
+boot();
+
+/* ホーム画面に入れたときオフラインでも開けるようにする。
+   file:// で開いたときは登録できないので、そのまま素通り。 */
+if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
+  window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+}
+
+</script>
+</body>
+</html>
