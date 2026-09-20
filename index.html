@@ -797,7 +797,8 @@ const S = {
                         // 空でも「ｷﾕｳﾘﾖｳ」「ｼﾖｳﾖ」で給与・賞与は判定できる。
   incomeSource: "bank", // "bank" = 銀行の入金から自動 / "manual" = 手入力
   incOther: true,       // 児童手当などの入金も収入に数えるか
-  lastBackup: ""        // 最後に書き出した日 "2026-09-20"
+  lastBackup: "",       // 最後に書き出した日 "2026-09-20"
+  twoLineFixed: false   // 楽天CSVの2行表示をまとめ直したか
 };
 let curYm = null, selDay = null;
 
@@ -967,6 +968,54 @@ function bankCardsOf(ym) {
   });
 }
 
+/* 楽天のCSVは、1つの利用を2行で書いてくることがある。
+   （例）「楽天ＳＰ　エスポット　703141」と「楽天ＳＰ　エスポット」
+         「ＶＩＳＡ国内利用　ＶＳｶﾞｼﾞﾖｶ…」と「ｶﾞｼﾞﾖｶ…」
+   どちらの行にも日付と金額が入っているため、そのままだと
+   同じ買い物を2件として数えてしまい、合計が倍になる。
+
+   見分けかた：となり合う2行が
+     ・同じ利用日 ・同じ金額 ・同じ利用者
+     ・店名がちがい、記号や番号を取り除くと片方がもう片方を含む
+   同じ日に同じ店で同じ額を2回使った正当な明細（駐車場500円×2など）は
+   店名がまったく同じなので、こちらは1件にまとめない。            */
+function twoLineKey(name) {
+  return String(name || "")
+    .replace(/[\s　]+/g, "")      // 空白を詰める
+    .replace(/[0-9０-９]+$/, "");  // 末尾の管理番号を落とす
+}
+function isTwoLinePair(a, b) {
+  if (!a || !b) return false;
+  if (a.d !== b.d || a.amt !== b.amt) return false;
+  if ((a.who || "") !== (b.who || "")) return false;
+  if (a.name === b.name) return false;          // 同名は正当な2件
+  const x = twoLineKey(a.name), y = twoLineKey(b.name);
+  if (x.length < 2 || y.length < 2) return false;
+  return x.indexOf(y) >= 0 || y.indexOf(x) >= 0;
+}
+function dedupeTwoLine(items) {
+  const out = [];      // まとめたあとの明細（写し）
+  const srcs = [];     // out と同じ並びで、元になった行
+  const merged = [];   // { from: [元の2行], to: 残る1件 }
+  for (const t of items) {
+    const i = out.length - 1;
+    const p = i >= 0 ? out[i] : null;
+    if (p && isTwoLinePair(p, t)) {
+      const longer  = p.name.length >= t.name.length ? p.name : t.name;
+      const shorter = p.name.length >= t.name.length ? t.name : p.name;
+      p.name = shorter;                 // 読みやすいほうを表示名にする
+      p.note = p.note || longer;        // もう一方は控えとして残す
+      if (!p.fx && t.fx) p.fx = t.fx;
+      // 名前が変わると識別子も変わるので、元の2行ぶんを控えておく
+      merged.push({ from: [srcs[i], t], to: p });
+      continue;
+    }
+    out.push(Object.assign({}, t));
+    srcs.push(t);
+  }
+  return { items: out, merged };
+}
+
 function importEnavi(text, filename) {
   const rows = parseCSV(text);
   if (!rows.length) throw new Error("中身が読めませんでした");
@@ -995,6 +1044,9 @@ function importEnavi(text, filename) {
                  who: (row[iU] || "").trim(), amt: amt, fx: null, note: "" });
   }
   if (!items.length) throw new Error("明細行がありませんでした");
+  const dd = dedupeTwoLine(items);
+  const merged = dd.merged.length;
+  const list = dd.items;
 
   // 請求月の決定：ファイル名 → ヘッダ「N月支払金額」+ 最終利用日の年
   let ym = null;
@@ -1002,13 +1054,13 @@ function importEnavi(text, filename) {
   if (fm) ym = fm[1] + "-" + fm[2];
   if (!ym) {
     const hm = hdr.join(",").match(/(\d{1,2})月支払金額/);
-    const maxD = items.map(t => t.d).sort().pop();
+    const maxD = list.map(t => t.d).sort().pop();
     const my = Number(maxD.slice(0, 4)), mm = Number(maxD.slice(5, 7));
     if (hm) { const m = Number(hm[1]); ym = (my + (m < mm ? 1 : 0)) + "-" + String(m).padStart(2, "0"); }
     else ym = maxD.slice(0, 7);
   }
-  const total = items.reduce((s, t) => s + t.amt, 0);
-  return { ym, items, total };
+  const total = list.reduce((s, t) => s + t.amt, 0);
+  return { ym, items: list, total, merged };
 }
 
 /* =========================================================
@@ -2030,6 +2082,39 @@ function fillCatSelects() {
   $("trendCat").innerHTML = opts;
 }
 
+/* すでに取り込んだぶんの二重計上を、一度だけ直す。
+   特別費や会社立替の印は、残るほうの明細へ引き継ぐ。 */
+function migrateTwoLine() {
+  if (S.twoLineFixed) return 0;
+  let n = 0;
+  Object.keys(S.cards).forEach(ym => {
+    const before = S.cards[ym] || [];
+    if (before.length < 2) return;
+    const seenA = {};
+    const idBefore = new Map(before.map(t => [t, cardTxId(ym, t, seenA)]));
+    const r = dedupeTwoLine(before);
+    if (!r.merged.length) return;
+    n += r.merged.length;
+    const seenB = {};
+    const idAfter = new Map(r.items.map(t => [t, cardTxId(ym, t, seenB)]));
+    r.merged.forEach(({ from, to }) => {
+      const toId = idAfter.get(to);
+      if (!toId) return;
+      from.forEach(src => {
+        const fromId = idBefore.get(src);
+        if (!fromId || fromId === toId) return;
+        if (S.exp[fromId] !== undefined && S.exp[toId] === undefined) S.exp[toId] = S.exp[fromId];
+        if (S.special[fromId] !== undefined && S.special[toId] === undefined) S.special[toId] = S.special[fromId];
+        delete S.exp[fromId]; delete S.special[fromId];
+      });
+    });
+    S.cards[ym] = r.items;
+  });
+  S.twoLineFixed = true;
+  save();
+  return n;
+}
+
 /* 旧バージョンは行番号でフラグを持っていたので、いまの並び順で読み替える */
 function migrateIds() {
   const old = /^\d{4}-\d{2}\|\d+$/;
@@ -2061,6 +2146,7 @@ async function boot() {
     }
   }
   migrateIds();
+  const fixedN = migrateTwoLine();
   fillCatSelects();
   const ms = allMonths(); curYm = ms[ms.length - 1];
 
@@ -2091,7 +2177,8 @@ async function boot() {
         S.cards[r.ym] = m.out;
         log.push(`<div class="adv good"><div class="h">${ymLabel(r.ym)}（カード）</div>
           <div class="b">${m.added ? `<b>${m.added}件</b>を新しく追加しました。` : "新しい明細はありませんでした。"}
-          ${m.kept ? `もともとの${m.kept}件はそのまま残っています。` : ""}<br>
+          ${m.kept ? `もともとの${m.kept}件はそのまま残っています。` : ""}
+          ${r.merged ? `<br>同じ買い物が2行に分かれていた${r.merged}件は、1件にまとめました。` : ""}<br>
           <span class="mini">この請求月の合計 ${yen(sum(cardsOf(r.ym)))}円 ／ 明細書の「ご請求金額」と一致するか確認してください。</span></div></div>`);
       } catch (err) {
         log.push(`<div class="adv"><div class="h">${esc(f.name)} は読めませんでした</div>
