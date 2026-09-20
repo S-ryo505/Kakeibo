@@ -1000,7 +1000,11 @@ function bankCardsOf(ym) {
    同じ日に同じ店で同じ額を2回使った正当な明細（駐車場500円×2など）は
    店名がまったく同じなので、こちらは1件にまとめない。            */
 function twoLineKey(name) {
-  return normName(name).replace(/[0-9]+$/, "");   // 末尾の管理番号を落とす
+  return normName(name)
+    // 同じ請求を「08ｶﾞﾂﾌﾞﾝ」と「０８月分」のように書き分けてくることがある。
+    // 末尾の請求月の言い回しはそろえて落とす。
+    .replace(/[0-9]{1,2}(ガツブン|ガツフン|ガツ|月分|月)$/, "")
+    .replace(/[0-9]+$/, "");                      // 末尾の管理番号を落とす
 }
 function isTwoLinePair(a, b) {
   if (!a || !b) return false;
@@ -2133,7 +2137,7 @@ function fillCatSelects() {
 /* すでに取り込んだぶんの二重計上を、一度だけ直す。
    特別費や会社立替の印は、残るほうの明細へ引き継ぐ。 */
 function migrateTwoLine() {
-  if (S.twoLineFixed >= 2) return 0;   // 版を上げると、直し方を改めたぶんを再適用できる
+  if (S.twoLineFixed >= 3) return 0;   // 版を上げると、直し方を改めたぶんを再適用できる
   let n = 0;
   Object.keys(S.cards).forEach(ym => {
     const before = S.cards[ym] || [];
@@ -2158,7 +2162,7 @@ function migrateTwoLine() {
     });
     S.cards[ym] = r.items;
   });
-  S.twoLineFixed = 2;
+  S.twoLineFixed = 3;
   save();
   return n;
 }
