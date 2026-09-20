@@ -137,7 +137,13 @@ section.page.on{display:block;animation:fade .25s ease}
 .ie .k{font-size:10px;color:var(--ink2);font-weight:700}
 .tx.isexp{opacity:.5}
 .tx.isexp .am{text-decoration:line-through}
-.tx .ck{width:24px;height:24px;flex:none;accent-color:#EF6FA4;margin:0}
+.tx .ck,.srow .ck{width:24px;height:24px;flex:none;accent-color:#EF6FA4;margin:0}
+.srow.pickable{cursor:pointer;-webkit-tap-highlight-color:transparent}
+.srow.pickable:active{background:#FBF5F9}
+.bxamt{font-weight:800;font-variant-numeric:tabular-nums;font-size:13.5px;flex:none}
+.bxsum{margin-top:13px;padding-top:11px;border-top:1.5px dashed var(--line);
+  font-size:14px;font-weight:800;display:flex;justify-content:space-between;align-items:baseline}
+.bxsum b{font-size:17px;color:var(--berry-d)}
 .selbar{position:fixed;left:0;right:0;bottom:calc(70px + env(safe-area-inset-bottom));z-index:70;
   background:#fff;border-top:1px solid var(--line);padding:10px 14px;
   box-shadow:0 -6px 18px -8px rgba(160,110,140,.4)}
@@ -1371,6 +1377,65 @@ function renderCats(tx) {
   });
 }
 
+/* 海外利用やETCを、1件ずつえらんで会社立替に移す。
+   ETCは通勤と私用が混ざるので、まとめて移すと実態とずれてしまう。 */
+function openBulkExp(title, hint, list) {
+  if (!list.length) return;
+  const picked = new Set(list.map(t => t.id));     // はじめは全部えらんだ状態
+
+  // 一覧は最初に一度だけ描く。チェックのたびに作り直すと、
+  // 件数が多いときにスクロールの位置が先頭へ戻ってしまう。
+  $("sheetBody").innerHTML = `
+    <div class="hd">${esc(title)}<small>${esc(hint)}</small></div>
+    <div class="row2" style="margin-top:11px">
+      <button class="btn sub sm" id="bxAll" style="width:100%">すべて選ぶ</button>
+      <button class="btn sub sm" id="bxNone" style="width:100%">すべて外す</button>
+    </div>
+    <div style="margin-top:6px">
+      ${list.map(t => `<div class="srow pickable" data-pick="${esc(t.id)}">
+        <input type="checkbox" class="ck" checked>
+        <div class="t">${esc(t.name)}
+          <small>${t.d.slice(5).replace("-", "/")} ・ ${esc(t.cat)}${t.who ? " ・ " + esc(t.who) : ""}
+            ${t.note ? " ・ " + esc(t.note) : ""}</small></div>
+        <div class="bxamt">${yen(t.amt)}</div></div>`).join("")}
+    </div>
+    <div class="bxsum"><span id="bxCount"></span><b id="bxTotal"></b></div>
+    <button class="btn" id="bxOk" style="margin-top:11px"></button>
+    <button class="btn sub" id="bxCancel" style="margin-top:8px">やめる</button>`;
+
+  const sync = () => {
+    $("sheetBody").querySelectorAll("[data-pick]").forEach(el => {
+      const on = picked.has(el.dataset.pick);
+      el.querySelector(".ck").checked = on;
+      el.style.opacity = on ? "1" : ".45";
+    });
+    const chosen = list.filter(t => picked.has(t.id));
+    $("bxCount").textContent = `えらんだ ${chosen.length}件`;
+    $("bxTotal").textContent = yen(sum(chosen)) + "円";
+    const ok = $("bxOk");
+    ok.disabled = !chosen.length;
+    ok.textContent = chosen.length ? `この${chosen.length}件を会社立替にする` : "えらんでください";
+  };
+
+  $("sheetBody").querySelectorAll("[data-pick]").forEach(el => el.onclick = () => {
+    const id = el.dataset.pick;
+    picked.has(id) ? picked.delete(id) : picked.add(id);
+    sync();
+  });
+  $("bxAll").onclick = () => { list.forEach(t => picked.add(t.id)); sync(); };
+  $("bxNone").onclick = () => { picked.clear(); sync(); };
+  $("bxCancel").onclick = closeSheet;
+  $("bxOk").onclick = () => {
+    const n = picked.size; if (!n) return;
+    list.forEach(t => { if (picked.has(t.id)) S.exp[t.id] = true; });
+    save(); closeSheet(); renderAll();
+    toast(`${n}件を会社立替にしました`);
+  };
+
+  sync();
+  $("sheet").classList.add("on"); $("ovl").classList.add("on");
+}
+
 function renderExp(all) {
   const ex = all.filter(t => t.exp && t.src !== "bank");
   const tot = sum(ex);
@@ -1412,11 +1477,12 @@ function renderExp(all) {
       if (ex.length > 20) h += `<div class="mini">ほか${ex.length - 20}件</div>`;
     }
     if (abroad.length || etc.length) {
-      h += `<div class="mini" style="margin-top:11px;margin-bottom:6px">まだ家計に入っている分をまとめて移せます</div>`;
+      h += `<div class="mini" style="margin-top:11px;margin-bottom:6px">
+        まだ家計に入っている分です。押すと一覧が出るので、<b>会社から戻ってくる分だけ</b>えらべます。</div>`;
       if (abroad.length) h += `<button class="btn sub sm" id="expAbroad" style="width:100%;margin-bottom:7px">
-        海外利用 ${abroad.length}件（${yen(sum(abroad))}円）を立替にする</button>`;
+        海外での利用 ${abroad.length}件（${yen(sum(abroad))}円）をえらぶ</button>`;
       if (etc.length) h += `<button class="btn sub sm" id="expEtc" style="width:100%">
-        ETC ${etc.length}件（${yen(sum(etc))}円）を立替にする</button>`;
+        ＥＴＣ ${etc.length}件（${yen(sum(etc))}円）をえらぶ</button>`;
     }
   }
   $("expBox").innerHTML = h;
@@ -1427,9 +1493,11 @@ function renderExp(all) {
     save(); renderAll(); toast("記録しました");
   };
   const ab = $("expAbroad");
-  if (ab) ab.onclick = () => { abroad.forEach(t => S.exp[t.id] = true); save(); renderAll(); toast(`海外利用${abroad.length}件を立替にしました`); };
+  if (ab) ab.onclick = () => openBulkExp("海外での利用",
+    "出張ぶんにチェックを入れてください。外したものは家計にのこります。", abroad);
   const eb = $("expEtc");
-  if (eb) eb.onclick = () => { etc.forEach(t => S.exp[t.id] = true); save(); renderAll(); toast(`ETC${etc.length}件を立替にしました`); };
+  if (eb) eb.onclick = () => openBulkExp("ＥＴＣの利用",
+    "通勤や出張ぶんにチェックを入れてください。おでかけぶんは外しておきます。", etc);
 }
 
 function renderBank(all) {
