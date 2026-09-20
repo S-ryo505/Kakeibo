@@ -488,6 +488,7 @@ svg{display:block;width:100%;overflow:visible}
       <h2><span class="ic" style="background:#F1FBF5">💾</span>バックアップと共有</h2>
       <div class="mini" style="margin-bottom:9px">
         データはこの端末のブラウザに保存されます。夫婦で共有するときは、書き出したファイルをGoogleドライブに置いて、もう一方の端末で読み込んでください。</div>
+      <div id="backupState" style="margin-bottom:10px"></div>
       <div class="row2">
         <button class="btn sub sm" id="expBtn" style="width:100%">書き出す</button>
         <button class="btn sub sm" id="impBtn" style="width:100%">読み込む</button>
@@ -657,6 +658,36 @@ const Store = (() => {
   };
 })();
 
+/* ブラウザは端末の空きが減ると、サイトの保存データを
+   ことわりなく消すことがある。「消さないでほしい」と申請しておく。
+   ホーム画面に追加してあると通りやすい。
+   断られても動作は変わらないので、結果は表示だけに使う。      */
+async function askPersist() {
+  if (!navigator.storage || !navigator.storage.persist) return null;
+  try {
+    if (await navigator.storage.persisted()) return true;
+    return await navigator.storage.persist();
+  } catch (e) { return null; }
+}
+async function storageInfo() {
+  const out = { persisted: null, usage: null };
+  try {
+    if (navigator.storage && navigator.storage.persisted)
+      out.persisted = await navigator.storage.persisted();
+    if (navigator.storage && navigator.storage.estimate) {
+      const e = await navigator.storage.estimate();
+      if (e && e.usage != null) out.usage = e.usage;
+    }
+  } catch (e) {}
+  return out;
+}
+function daysSince(ymd) {
+  if (!ymd) return null;
+  const d = new Date(ymd + "T00:00:00");
+  if (isNaN(d)) return null;
+  return Math.floor((Date.now() - d.getTime()) / 86400000);
+}
+
 /* =========================================================
    1. 費目とベンチマーク
    ========================================================= */
@@ -765,7 +796,8 @@ const S = {
   employer: "",         // 給与振込元の判定に使う文字（半角カナ）。⚙️設定で入れる。
                         // 空でも「ｷﾕｳﾘﾖｳ」「ｼﾖｳﾖ」で給与・賞与は判定できる。
   incomeSource: "bank", // "bank" = 銀行の入金から自動 / "manual" = 手入力
-  incOther: true        // 児童手当などの入金も収入に数えるか
+  incOther: true,       // 児童手当などの入金も収入に数えるか
+  lastBackup: ""        // 最後に書き出した日 "2026-09-20"
 };
 let curYm = null, selDay = null;
 
@@ -1827,6 +1859,33 @@ function renderFixed() {
   });
 }
 
+/* ---- バックアップの状態 ---- */
+async function renderBackupState() {
+  const box = $("backupState"); if (!box) return;
+  const info = await storageInfo();
+  const d = daysSince(S.lastBackup);
+  const mb = info.usage != null ? (info.usage / 1048576).toFixed(1) + "MB" : null;
+
+  let h = "";
+  if (d === null) {
+    h += `<div class="adv"><div class="h">まだ一度も書き出していません</div>
+      <div class="b">このデータは<b>この端末のブラウザの中だけ</b>にあります。
+      機種変更やサイトデータの削除で消えるので、ときどき「書き出す」を押して、
+      できたファイルをGoogleドライブなどに置いてください。</div></div>`;
+  } else if (d >= 30) {
+    h += `<div class="adv"><div class="h">最後の書き出しから ${d}日 たちました</div>
+      <div class="b">そろそろ「書き出す」を押して、ファイルを残しておきましょう。</div></div>`;
+  } else {
+    h += `<div class="adv good"><div class="h">最後に書き出したのは ${esc(S.lastBackup)}（${d}日前）</div>
+      <div class="b">できたファイルはダウンロードフォルダにあります。</div></div>`;
+  }
+  h += `<div class="mini">保存のようす： ${
+    info.persisted === true ? "この端末に<b>しっかり保存</b>されています（空き容量が減っても消えません）"
+    : info.persisted === false ? "ふつうの保存です（端末の空きが少なくなると消えることがあります）"
+    : "確認できませんでした"}${mb ? ` ／ 使っている容量 ${mb}` : ""}</div>`;
+  box.innerHTML = h;
+}
+
 /* ---- ルール一覧 ---- */
 function renderRules() {
   const ks = Object.keys(S.rules);
@@ -1932,9 +1991,15 @@ let saveT = null;
 function save() { clearTimeout(saveT); saveT = setTimeout(() => Store.save(S), 200); }
 
 function exportJSON() {
+  // 書き出した日を先に記録してから写しを作る。
+  // 順番を逆にすると、ファイルの中の lastBackup が古いままになり、
+  // それを読み込んだ端末で「まだ書き出していない」と出てしまう。
+  const today = new Date(Date.now() - new Date().getTimezoneOffset() * 60000)
+    .toISOString().slice(0, 10);
+  S.lastBackup = today; save();
   const safe = Object.assign({}, S); delete safe.apiKey;   // キーは書き出さない
   const text = JSON.stringify(safe, null, 1);
-  const fname = `kakeibo_backup_${new Date().toISOString().slice(0, 10)}.json`;
+  const fname = `kakeibo_backup_${today}.json`;
   // アプリ版はWebViewなのでブラウザのダウンロードが使えない。端末側に橋渡しする。
   if (window.AndroidBridge && window.AndroidBridge.saveText) {
     try { toast(window.AndroidBridge.saveText(fname, text) || "書き出しました"); return; }
@@ -2171,7 +2236,7 @@ async function boot() {
     }
   };
 
-  $("expBtn").onclick = exportJSON;
+  $("expBtn").onclick = () => { exportJSON(); renderBackupState(); };
   if (window.AndroidBridge && window.AndroidBridge.shareText) {
     const sb = $("shareBtn");
     sb.style.display = "block";
@@ -2209,7 +2274,7 @@ async function boot() {
     const f = e.target.files[0]; if (!f) return;
     try {
       const r = applyBackup(await f.text());
-      if (r) toast("読み込みました");
+      if (r) { toast("読み込みました"); renderBackupState(); }
     } catch (err) { toast("読み込めませんでした：" + err.message); }
     e.target.value = "";
   };
@@ -2232,6 +2297,9 @@ async function boot() {
   };
 
   renderBench(); renderRules(); renderAll();
+
+  // 保存データを消されにくくする申請（結果を待たずに画面は出す）
+  askPersist().then(renderBackupState);
 }
 boot();
 
