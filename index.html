@@ -214,7 +214,7 @@ svg{display:block;width:100%;overflow:visible}
   pointer-events:none;transition:opacity .2s}
 .ovl.on{opacity:1;pointer-events:auto}
 .sheet{position:fixed;left:0;right:0;bottom:0;z-index:160;background:#fff;
-  border-radius:24px 24px 0 0;padding:8px 16px calc(20px + env(safe-area-inset-bottom));
+  border-radius:24px 24px 0 0;padding:8px 16px calc(96px + env(safe-area-inset-bottom));
   transform:translateY(102%);transition:transform .26s cubic-bezier(.3,1,.4,1);
   max-height:88vh;overflow-y:auto;box-shadow:0 -10px 30px -12px rgba(120,80,110,.5)}
 .sheet.on{transform:translateY(0)}
@@ -241,6 +241,14 @@ svg{display:block;width:100%;overflow:visible}
   line-height:1;letter-spacing:-.03em;display:grid;place-items:center;flex:none;
   box-shadow:var(--shadow);min-height:0;overflow:hidden;white-space:nowrap}
 .msel button.today:active{transform:scale(.92)}
+.seg{display:inline-flex;background:#F7F1F5;border-radius:99px;padding:2px;margin-left:auto}
+.seg button{border:none;background:none;font:inherit;font-size:11px;font-weight:800;
+  color:var(--ink2);border-radius:99px;padding:5px 11px;min-height:0}
+.seg button.on{background:#fff;color:var(--berry-d);box-shadow:0 1px 3px rgba(160,110,140,.25)}
+.jump{border:none;background:#FFEFF6;color:var(--berry-d);font:inherit;font-size:10.5px;
+  font-weight:800;border-radius:99px;padding:4px 9px;min-height:0;margin-left:6px;flex:none}
+.jump:active{transform:scale(.94)}
+.card h2 .sp{margin-left:auto;display:flex;align-items:center;gap:6px}
 .msel{gap:5px}
 .aibtns{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:9px}
 .clink{display:flex;align-items:center;justify-content:center;gap:6px;
@@ -270,6 +278,8 @@ svg{display:block;width:100%;overflow:visible}
       <div class="big" id="heroAmt">0<small>円</small></div>
       <div class="sub" id="heroSub"></div>
       <div class="gauge" id="heroG"><i style="width:0"></i></div>
+      <button class="jump" id="heroJump" style="position:absolute;right:14px;bottom:12px;
+        background:rgba(255,255,255,.28);color:#fff;z-index:2">明細をみる ›</button>
     </div>
 
     <div class="card">
@@ -277,9 +287,12 @@ svg{display:block;width:100%;overflow:visible}
     </div>
 
     <div class="card">
-      <h2><span class="ic" style="background:#FFEFF6">🗓</span>いつ使った？</h2>
+      <h2><span class="ic" style="background:#FFEFF6">🗓</span>いつ使った？
+        <span class="sp"><span class="seg" id="calSeg">
+          <button data-cm="pay" class="on">支出</button><button data-cm="inc">収入</button>
+        </span><button class="jump" data-jump="all">明細 ›</button></span></h2>
       <div id="calWrap"></div>
-      <div class="legend"><span>すくない</span>
+      <div class="legend" id="legend"><span>すくない</span>
         <b style="background:#FAF4F8"></b><b style="background:#FBD3E4"></b>
         <b style="background:#F49CC3"></b><b style="background:#EF6FA4"></b>
         <b style="background:#C33B75"></b><span>おおい</span></div>
@@ -287,14 +300,17 @@ svg{display:block;width:100%;overflow:visible}
     </div>
 
     <div class="card">
-      <h2><span class="ic" style="background:#EDF7FF">📊</span>何に使った？</h2>
+      <h2><span class="ic" style="background:#EDF7FF">📊</span>何に使った？
+        <span class="sp"><button class="jump" data-jump="all">明細 ›</button></span></h2>
       <div id="catBars"></div>
       <div class="mini" style="margin-top:9px">縦線 ┃ = 一般世帯のめやす（世帯人数で調整済み）。タップで明細</div>
     </div>
 
     <div class="card">
-      <h2><span class="ic" style="background:#E9F3FF">🏢</span>会社の立替（家計から除外）</h2>
-      <div id="expBox"></div>
+      <h2><span class="ic" style="background:#E9F3FF">🏢</span>会社の立替（家計から除外）
+        <span class="sp"><button class="jump" id="expToggle">ひらく ＋</button></span></h2>
+      <div id="expPick"></div>
+      <div id="expBox" style="display:none"></div>
     </div>
 
     <div class="card">
@@ -341,9 +357,13 @@ svg{display:block;width:100%;overflow:visible}
     </div>
 
     <div class="card">
-      <h2><span class="ic" style="background:#EDF7FF">📈</span>毎月のうごき</h2>
+      <h2><span class="ic" style="background:#EDF7FF">📈</span>毎月のうごき
+        <span class="sp"><span class="seg" id="trendSeg">
+          <button data-tm="pay" class="on">支出</button><button data-tm="inc">収入</button>
+        </span></span></h2>
       <div class="scrollx"><div id="trendChart"></div></div>
-      <div id="trendLeg" style="margin-top:10px"></div>
+      <div id="trendZoomNote" style="margin-top:7px;display:flex;align-items:center;gap:8px"></div>
+      <div id="trendLeg" style="margin-top:8px"></div>
     </div>
     <div class="card">
       <h2><span class="ic" style="background:#FFEFF6">🔍</span>費目べつの推移</h2>
@@ -376,7 +396,10 @@ svg{display:block;width:100%;overflow:visible}
         </select>
       </div>
       <div id="donut"></div>
-      <button class="btn sub sm" id="selBtn" style="margin-top:9px;width:100%">まとめて選ぶ</button>
+      <div class="row2" style="margin-top:9px">
+        <button class="btn sub sm" id="selBtn" style="width:100%">まとめて選ぶ</button>
+        <button class="btn sub sm" id="findBtn" style="width:100%">入れた言葉で調べる</button>
+      </div>
       <div id="txList" style="margin-top:6px"></div>
       <div id="selBar" style="display:none"></div>
     </div>
@@ -477,6 +500,16 @@ svg{display:block;width:100%;overflow:visible}
     </div>
 
     <div class="card">
+      <h2><span class="ic" style="background:#EAF3EC">🏦</span>銀行明細の数えかた</h2>
+      <div class="mini" style="margin-bottom:4px">
+        二重に数えないよう、つぎのものは<b>家計の支出から外しています</b>。
+        必要なものはここでONにしてください。</div>
+      <div id="bankKindBox"></div>
+      <div class="mini" style="margin-top:9px">
+        給与などの入金は収入なので、ここには出てきません（支出には数えません）。</div>
+    </div>
+
+    <div class="card">
       <h2><span class="ic" style="background:#F6F1FF">🤖</span>AI分析をこの端末で動かす</h2>
       <div class="mini" style="margin-bottom:9px">
         Claude APIのキーを入れると、AI分析ボタンがこの端末だけで完結します。空のままなら、分析ボタンは「メモをコピー」に切り替わり、Claudeアプリに貼り付ける方式になります。<br>
@@ -525,8 +558,13 @@ svg{display:block;width:100%;overflow:visible}
 
     <div class="card">
       <h2><span class="ic" style="background:#F6F1FF">🏷</span>おみせの分類ルール</h2>
-      <div class="mini">明細で費目をなおすと、その店の分類としてここに覚えます。</div>
+      <div class="mini">明細で費目をなおすと、その店の分類としてここに覚えます。
+        費目のボタンを押すと、あとから変えられます。</div>
       <div id="ruleList" style="margin-top:9px"></div>
+      <div style="margin-top:14px;padding-top:12px;border-top:1.5px dashed var(--line)">
+        <div style="font-size:13px;font-weight:800;margin-bottom:6px">🗑 消した明細を戻す</div>
+        <div id="hiddenBox"></div>
+      </div>
     </div>
   </section>
 
@@ -824,7 +862,11 @@ const S = {
   incomeSource: "bank", // "bank" = 銀行の入金から自動 / "manual" = 手入力
   incOther: true,       // 児童手当などの入金も収入に数えるか
   lastBackup: "",       // 最後に書き出した日 "2026-09-20"
-  twoLineFixed: 0       // 楽天CSVの2行表示をまとめ直した版
+  twoLineFixed: 0,      // 楽天CSVの2行表示をまとめ直した版
+  bankInclude: {},      // 種類ごとに「家計に数える」かどうか creditcard/atm/emoney/tax
+  lastYm: "",           // さいごに見ていた月（開き直しても同じ月を出す）
+  homeOpen: {},         // ホームの折りたためるカードの開き具合
+  hidden: {}            // 消した明細（取り込み直しても出てこないように覚えておく）
 };
 let curYm = null, selDay = null;
 
@@ -942,7 +984,9 @@ const BANK_RULES_PAY = [
   [["ｸﾚｼﾞﾂﾄ", "ｵﾘｺ", "ｾｿﾞﾝ", "ﾕ-ｼ-ｶ-ﾄﾞ", "ﾗｸﾃﾝｶ-ﾄﾞ"], "creditcard", "その他",
     "クレジットカードの引落し（カード明細と重複するため既定で対象外）"],
   [["ｼﾞﾄﾞｳｷ"], "atm", "その他", "ATMでの引き出し（現金の記録と重複しないよう既定で対象外）"],
-  [["ﾍﾟｲﾍﾟｲ", "PAYPAY", "ﾁﾔ-ｼﾞ"], "atm", "その他", "電子マネーへのチャージ（使った時点と重複しないよう既定で対象外）"],
+  [["ペイペイ", "PAYPAY", "チヤ-ジ", "チャージ", "スイカ", "SUICA", "パスモ", "PASMO",
+    "ワオン", "WAON", "エデイ", "EDY", "ナナコ"], "emoney", "その他",
+    "電子マネーへのチャージ（使った時点と重ならないよう既定で対象外）"],
   [["ｺﾃｲｼｻﾝｾﾞｲ", "ｼﾐﾝｾﾞｲｶ"], "tax", "税金・社会保険等", "税金・社会保険（家計調査のめやすには含まれません）"],
   [["ｶﾞﾂｺｳﾁﾖｳｼﾕｳｷﾝ", "ｶﾞﾂｺｳｷﾖｳｲ"], "expense", "教育", ""],
   [["電気"], "expense", "光熱・水道", ""],
@@ -981,17 +1025,25 @@ function bankTxId(ym, t, seen) {
   return "bank:" + ym + "|" + key + (seen[key] > 1 ? "#" + seen[key] : "");
 }
 function bankCardsOf(ym) {
+  if (_cache.bank.has(ym)) return _cache.bank.get(ym);
   const seen = {};
-  return (S.bank[ym] || []).map(t => {
+  const r = (S.bank[ym] || []).map(t => {
     const id = bankTxId(ym, t, seen);
-    const { kind, cat, label, incomeKind } = classifyBank(t.memo, t.dir);
-    const skip = (S.bankSkip[id] !== undefined) ? S.bankSkip[id] : (kind !== "expense");
+    const c0 = classifyBank(t.memo, t.dir);
+    const { kind, label, incomeKind } = c0;
+    const cat = S.rules["bank:" + t.memo] || c0.cat;   // 手で直したぶんを優先
+    // 既定は「支出だけ家計に数える」。ただし種類ごとに設定で変えられる。
+    const byKind = (kind === "income") ? true            // 入金は支出ではないので必ず外す
+                 : (kind !== "expense") && !S.bankInclude[kind];
+    const skip = (S.bankSkip[id] !== undefined) ? S.bankSkip[id] : byKind;
     return {
       id, d: t.d, name: t.memo, who: t.dir === "pay" ? "支払" : "入金",
       amt: t.amt, cat, src: "bank", bankKind: kind, bankLabel: label, incomeKind,
       exp: skip, fx: null, note: ""
     };
   });
+  _cache.bank.set(ym, r);
+  return r;
 }
 
 /* 楽天のCSVは、1つの利用を2行で書いてくることがある。
@@ -1141,7 +1193,23 @@ function catOf(name, txid) {
   if (S.rules[k]) return S.rules[k];
   return autoCat(name);
 }
+/* 同じ月の明細は何度も引かれる（ホーム・すいい・明細で使い回す）。
+   毎回すべての取り込みデータを走査すると、月を変えるたびに
+   画面が引っかかるので、いちど組み立てたものをとっておく。
+   データを書きかえたときだけ捨てる。                            */
+const _cache = { tx: new Map(), card: new Map(), bank: new Map(), usesCard: null };
+function clearCache() {
+  _cache.tx.clear(); _cache.card.clear(); _cache.bank.clear(); _cache.usesCard = null;
+}
+
+/* 「家計から外す」には2つの理由がある。
+   ・会社の立替（あとで戻ってくる）
+   ・銀行明細のうち、カード引落しや入金など二重計上をさけるもの
+   立替の金額を出すときに後者まで混ぜると、給与まで立替に見えてしまう。 */
+const isCompanyExp = t => !!t.exp && t.src !== "bank";
+
 function txOfMonth(ym) {
+  if (_cache.tx.has(ym)) return _cache.tx.get(ym);
   const out = [];
   if (S.basis === "stmt") {
     cardsOf(ym).forEach(t => out.push(t));
@@ -1166,7 +1234,14 @@ function txOfMonth(ym) {
             : (t.src === "card" && !!S.expRules[mkey(t.name)]);
     }
   });
-  return out.sort((a, b) => b.d.localeCompare(a.d) || b.amt - a.amt);
+  const kept = out.filter(t => !S.hidden[t.id]);       // 消したものは出さない
+  kept.sort((a, b) => b.d.localeCompare(a.d) || b.amt - a.amt);
+  // 特別費の自動判定もここで済ませる。
+  // 呼び出す側でやると、画面ごとに結果がずれることがある。
+  const isSp = autoSpecial(kept, ym);
+  kept.forEach(t => { if (S.special[t.id] === undefined) t.sp = isSp(t); });
+  _cache.tx.set(ym, kept);
+  return kept;
 }
 /* 明細の識別子は「行番号」ではなく「中身」から作る。
    こうしておくと、あとから届いた利用分が増えた同じ請求月のCSVを
@@ -1184,11 +1259,14 @@ function cardTxId(ym, t, seen) {
   return ym + "|" + key + (seen[key] > 1 ? "#" + seen[key] : "");
 }
 function cardsOf(ym) {
+  if (_cache.card.has(ym)) return _cache.card.get(ym);
   const seen = {};
-  return (S.cards[ym] || []).map(t => ({
+  const r = (S.cards[ym] || []).map(t => ({
     id: cardTxId(ym, t, seen), d: t.d, name: t.name, who: t.who || "本人",
     amt: t.amt, cat: catOf(t.name), src: "card", fx: t.fx, note: t.note || ""
   }));
+  _cache.card.set(ym, r);
+  return r;
 }
 function allMonths() {
   const set = new Set();
@@ -1260,15 +1338,14 @@ function thisYm() {
   return n.getFullYear() + "-" + String(n.getMonth() + 1).padStart(2, "0");
 }
 function renderAll() {
+  if (S.lastYm !== curYm) { S.lastYm = curYm; save(); }   // 開き直しても同じ月を出す
   $("mlab").textContent = ymLabel(curYm);
   $("todayBtn").style.display = (curYm === thisYm()) ? "none" : "block";
   const all = txOfMonth(curYm);
-  const isSp = autoSpecial(all, curYm);
-  all.forEach(t => { if (S.special[t.id] === undefined) t.sp = isSp(t); });
   const tx = all.filter(t => !t.exp);      // 家計として数える分
   renderHero(tx);
   renderStats(tx);
-  renderCal(tx);
+  renderCal(all);
   renderCats(tx);
   renderExp(all);
   renderBank(all);
@@ -1318,43 +1395,63 @@ function renderStats(tx) {
     <div><div class="v">${yen(fix)}</div><div class="k">固定費</div></div>`;
 }
 
-function renderCal(tx) {
+let calMode = "pay";          // "pay" = 支出、"inc" = 収入
+let trendMode = "pay";        // 「毎月のうごき」も同じ
+let trendZoom = 1;            // たて軸の倍率（2本指でひろげると大きくなる）
+const INCC = { "給与": "#5FCFB8", "賞与": "#3FAE97", "児童手当": "#9BCB6B",
+               "子育て給付金": "#BCDB7F", "税金の還付": "#7FB2E5", "その他の収入": "#A9C4B6" };
+const colOf = c => (trendMode === "inc" ? (INCC[c] || "#A9C4B6") : (CATC[c] || "#ccc"));
+function renderCal(all) {
+  // 支出は家計に数えるぶん、収入は銀行の入金。
+  // ひとつのカレンダーに混ぜると、使った額が分からなくなる。
+  const src = calMode === "inc"
+    ? all.filter(t => t.src === "bank" && t.bankKind === "income")
+    : all.filter(t => !t.exp && t.src !== "fixed");
   const byDay = {};
-  tx.filter(t => t.src !== "fixed").forEach(t => byDay[t.d] = (byDay[t.d] || 0) + t.amt);
+  src.forEach(t => byDay[t.d] = (byDay[t.d] || 0) + t.amt);
   const days = Object.keys(byDay);
-  if (!days.length) { $("calWrap").innerHTML = '<div class="empty"><span class="e">🌸</span>まだ記録がありません</div>';
-    $("daySel").innerHTML = ""; return; }
+  const box = $("calWrap");
+  if (!days.length) {
+    box.innerHTML = `<div class="empty"><span class="e">${calMode === "inc" ? "💰" : "🌸"}</span>
+      ${calMode === "inc" ? "この月の入金はありません" : "まだ記録がありません"}</div>`;
+    $("daySel").innerHTML = ""; return;
+  }
   const mx = Math.max(...Object.values(byDay));
   const months = [...new Set(days.map(d => d.slice(0, 7)))].sort();
   const SH = ["日", "月", "火", "水", "木", "金", "土"];
+  const PAL = calMode === "inc"
+    ? ["#F1F8F3", "#CDEBD8", "#93D8AE", "#5FCFB8", "#2E9E7E"]
+    : ["#FAF4F8", "#FBD3E4", "#F49CC3", "#EF6FA4", "#C33B75"];
   let html = "";
   months.forEach(m => {
     const [y, mo] = m.split("-").map(Number);
     const first = new Date(y, mo - 1, 1).getDay();
     const last = new Date(y, mo, 0).getDate();
     html += `<div class="calm"><div class="t">${mo}月</div><div class="cal">`;
-    SH.forEach(s => html += `<div class="h">${s}</div>`);
+    SH.forEach(x => html += `<div class="h">${x}</div>`);
     for (let i = 0; i < first; i++) html += "<div></div>";
     for (let d = 1; d <= last; d++) {
       const key = `${y}-${String(mo).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
-      const v = byDay[key] || 0;
-      const r = v / mx;
-      const bg = v === 0 ? "#FAF4F8"
-        : r < .12 ? "#FBD3E4" : r < .3 ? "#F49CC3" : r < .6 ? "#EF6FA4" : "#C33B75";
+      const v = byDay[key] || 0, r = v / mx;
+      const bg = v === 0 ? PAL[0] : r < .12 ? PAL[1] : r < .3 ? PAL[2] : r < .6 ? PAL[3] : PAL[4];
       html += `<div class="d${v ? " has" : ""}${selDay === key ? " sel" : ""}" data-d="${key}"
         style="background:${bg}">${d}${v ? `<div class="v">${v >= 10000 ? (v / 10000).toFixed(1) + "万" : Math.round(v / 1000) + "千"}</div>` : ""}</div>`;
     }
     html += "</div></div>";
   });
-  $("calWrap").innerHTML = html;
-  $("calWrap").querySelectorAll(".d[data-d]").forEach(el => el.onclick = () => {
+  box.innerHTML = html;
+  box.querySelectorAll(".d[data-d]").forEach(el => el.onclick = () => {
     selDay = (selDay === el.dataset.d) ? null : el.dataset.d;
-    renderCal(txOfMonth(curYm));
+    renderCal(all);
   });
+  $("legend").style.display = "flex";
+  [...$("legend").querySelectorAll("b")].forEach((b, i) => b.style.background = PAL[i]);
+
   if (selDay && byDay[selDay]) {
-    const list = tx.filter(t => t.d === selDay);
+    const list = src.filter(t => t.d === selDay);
     $("daySel").innerHTML = `<div style="margin-top:12px;padding-top:11px;border-top:1.5px dashed var(--line)">
-      <div style="font-size:12.5px;font-weight:800;margin-bottom:5px">${selDay.slice(5).replace("-", "/")} ・ ${yen(byDay[selDay])}円</div>
+      <div style="font-size:12.5px;font-weight:800;margin-bottom:5px">
+        ${selDay.slice(5).replace("-", "/")} ・ ${calMode === "inc" ? "入金" : "支出"} ${yen(byDay[selDay])}円</div>
       ${list.map(t => txRow(t, true)).join("")}</div>`;
   } else $("daySel").innerHTML = "";
 }
@@ -1437,14 +1534,14 @@ function openBulkExp(title, hint, list) {
 }
 
 function renderExp(all) {
-  const ex = all.filter(t => t.exp && t.src !== "bank");
+  const ex = all.filter(isCompanyExp);
   const tot = sum(ex);
   const paid = Number(S.expPaid[curYm] || 0);
 
   // 未回収の累計（表示中の月まで）
   let cum = 0;
   allMonths().filter(m => m <= curYm).forEach(m => {
-    cum += sum(txOfMonth(m).filter(t => t.exp)) - Number(S.expPaid[m] || 0);
+    cum += sum(txOfMonth(m).filter(isCompanyExp)) - Number(S.expPaid[m] || 0);
   });
 
   // 海外利用のワンタップ登録
@@ -1475,17 +1572,35 @@ function renderExp(all) {
       }
       h += `<div style="margin-top:10px">` + ex.slice(0, 20).map(t => txRow(t, false)).join("") + `</div>`;
       if (ex.length > 20) h += `<div class="mini">ほか${ex.length - 20}件</div>`;
+    } else {
+      h += `<div class="mini">この月は、まだ立替にしたものがありません。<br>
+        上のボタンから、会社から戻ってくる分をえらべます。</div>`;
     }
-    if (abroad.length || etc.length) {
-      h += `<div class="mini" style="margin-top:11px;margin-bottom:6px">
-        まだ家計に入っている分です。押すと一覧が出るので、<b>会社から戻ってくる分だけ</b>えらべます。</div>`;
-      if (abroad.length) h += `<button class="btn sub sm" id="expAbroad" style="width:100%;margin-bottom:7px">
-        海外での利用 ${abroad.length}件（${yen(sum(abroad))}円）をえらぶ</button>`;
-      if (etc.length) h += `<button class="btn sub sm" id="expEtc" style="width:100%">
-        ＥＴＣ ${etc.length}件（${yen(sum(etc))}円）をえらぶ</button>`;
-    }
+
   }
   $("expBox").innerHTML = h;
+  $("expBox").style.display = S.homeOpen.exp ? "block" : "none";
+  $("expToggle").textContent = S.homeOpen.exp ? "とじる －" : "ひらく ＋";
+
+  // 立替をえらぶボタンだけは、たたんでいても出しておく（毎月つかうため）
+  let pick = "";
+  if (abroad.length || etc.length) {
+    pick = `<div class="mini" style="margin-bottom:6px">
+      押すと一覧が出るので、<b>会社から戻ってくる分だけ</b>えらべます。</div>`;
+    if (abroad.length) pick += `<button class="btn sub sm" id="expAbroad" style="width:100%;margin-bottom:7px">
+      海外での利用 ${abroad.length}件（${yen(sum(abroad))}円）をえらぶ</button>`;
+    if (etc.length) pick += `<button class="btn sub sm" id="expEtc" style="width:100%">
+      ＥＴＣ ${etc.length}件（${yen(sum(etc))}円）をえらぶ</button>`;
+  } else if (ex.length) {
+    pick = `<div class="mini">この月の立替 <b>${yen(tot)}円</b>（${ex.length}件）</div>`;
+  }
+  $("expPick").innerHTML = pick;
+
+  $("expToggle").onclick = () => {
+    S.homeOpen.exp = !S.homeOpen.exp; save();
+    $("expBox").style.display = S.homeOpen.exp ? "block" : "none";
+    $("expToggle").textContent = S.homeOpen.exp ? "とじる －" : "ひらく ＋";
+  };
 
   const pi = $("expPaidSave");
   if (pi) pi.onclick = () => {
@@ -1595,9 +1710,11 @@ function monthSpend(ym) { return sum(txOfMonth(ym).filter(t => !t.exp)); }
    銀行だけ入れた状態で「支出が少ない＝貯蓄できている」という
    まったく逆の結論が出てしまう。                              */
 function usesCard() {
-  if (Object.keys(S.cards).length) return true;
-  return Object.values(S.bank).some(a =>
+  if (_cache.usesCard !== null) return _cache.usesCard;
+  const r = Object.keys(S.cards).length > 0 || Object.values(S.bank).some(a =>
     a.some(t => classifyBank(t.memo, t.dir).kind === "creditcard"));
+  _cache.usesCard = r;
+  return r;
 }
 function spendComplete(ym) {
   if (!usesCard()) return true;                       // 本当にカードを使わない運用
@@ -1735,25 +1852,60 @@ function renderBalance() {
     ${avg >= 20 ? "十分に貯められています。" : avg >= 15 ? "目安の範囲です。" : avg >= 0 ? "もう少し余地がありそうです。" : "支出が収入を上回っています。"}</div>`;
 }
 
+/* 2本指でひろげると、たて軸を拡大する。
+   小さい費目が見えないときに使う。よこのスクロールは邪魔しない。 */
+function bindPinch(id) {
+  const el = $(id);
+  if (!el || el._pinch) return;
+  el._pinch = true;
+  let base = 0, start = 1;
+  const dist = e => {
+    const [a, b] = [e.touches[0], e.touches[1]];
+    return Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+  };
+  el.addEventListener("touchstart", e => {
+    if (e.touches.length !== 2) return;
+    base = dist(e); start = trendZoom;
+  }, { passive: true });
+  el.addEventListener("touchmove", e => {
+    if (e.touches.length !== 2 || !base) return;
+    e.preventDefault();
+    trendZoom = Math.min(8, Math.max(1, start * (dist(e) / base)));
+    renderTrend();
+  }, { passive: false });
+  el.addEventListener("touchend", e => { if (e.touches.length < 2) base = 0; }, { passive: true });
+  // 2本指を使えないとき用に、たたいて元に戻せるようにしておく
+  el.addEventListener("dblclick", () => { trendZoom = 1; renderTrend(); });
+}
+
 /* ---- 推移 ---- */
 function renderTrend() {
   const ms = allMonths().slice(-12);
-  const data = ms.map(m => { const a = txOfMonth(m), h = a.filter(t => !t.exp);
-    return { m, bc: byCat(h), tot: sum(h), ex: sum(a.filter(t => t.exp)) }; });
+  const data = ms.map(m => {
+    const a = txOfMonth(m);
+    if (trendMode === "inc") {
+      // 収入のときは、入金を種類ごとに積む
+      const inc = a.filter(t => t.src === "bank" && t.bankKind === "income");
+      const bc = {}; inc.forEach(t => bc[t.cat] = (bc[t.cat] || 0) + t.amt);
+      return { m, bc, tot: sum(inc), ex: 0, inc: true };
+    }
+    const h = a.filter(t => !t.exp);
+    return { m, bc: byCat(h), tot: sum(h), ex: sum(a.filter(isCompanyExp)) };
+  });
   const anyEx = data.some(d => d.ex > 0);
-  const mx = Math.max(1, ...data.map(d => d.tot + d.ex));
+  const mx = Math.max(1, ...data.map(d => d.tot + d.ex)) / trendZoom;
   const W = Math.max(300, ms.length * 52), H = 196, PB = 26;
   const bw = W / ms.length * .62;
   let bars = "";
   data.forEach((d, i) => {
     const x = (i + .5) * (W / ms.length) - bw / 2;
     let y = H - PB;
-    CATN.forEach(c => {
+    (trendMode === "inc" ? Object.keys(d.bc) : CATN).forEach(c => {
       const v = d.bc[c] || 0; if (v <= 0) return;
       const hh = (v / mx) * (H - PB - 14);
       y -= hh;
       bars += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${hh.toFixed(1)}"
-        fill="${CATC[c]}" ${y === H - PB - hh ? 'rx="4"' : ""}></rect>`;
+        fill="${colOf(c)}" ${y === H - PB - hh ? 'rx="4"' : ""}></rect>`;
     });
     bars += `<text x="${(x + bw / 2).toFixed(1)}" y="${H - PB + 13}" text-anchor="middle"
       font-size="10" fill="#8A7791" font-weight="700">${Number(d.m.slice(5))}月</text>`;
@@ -1776,14 +1928,27 @@ function renderTrend() {
       stroke="#5FCFB8" stroke-width="1.5" stroke-dasharray="5 4"></line>
       <text x="4" y="${(y - 4).toFixed(1)}" font-size="9" fill="#3FAE97" font-weight="800">収入 ${yen(inc)}</text>`;
   }
+  bindPinch("trendChart");
   $("trendChart").innerHTML = `<svg viewBox="0 0 ${W} ${H + (anyEx ? 12 : 0)}" width="${W}" height="${H + (anyEx ? 12 : 0)}">${incLine}${bars}</svg>`;
-  $("trendLeg").innerHTML = (anyEx ? `<span style="display:inline-flex;align-items:center;gap:4px;margin:0 8px 5px 0;font-size:10.5px;color:#8FA9C4;font-weight:700">
+  if (trendZoom > 1.02) {
+    $("trendZoomNote").innerHTML =
+      `<span class="mini">たて軸 ${trendZoom.toFixed(1)}倍</span>
+       <button class="jump" id="tzReset">もとに戻す</button>`;
+    $("tzReset").onclick = () => { trendZoom = 1; renderTrend(); };
+  } else {
+    $("trendZoomNote").innerHTML = `<span class="mini">2本指でひろげると、たて軸を大きくできます</span>`;
+  }
+  $("trendLeg").innerHTML = (anyEx && trendMode !== "inc" ? `<span style="display:inline-flex;align-items:center;gap:4px;margin:0 8px 5px 0;font-size:10.5px;color:#8FA9C4;font-weight:700">
       <b style="width:11px;height:11px;border-radius:3px;background:#8FA9C4;opacity:.3;display:inline-block"></b>会社立替（家計外）</span>` : "")
-    + CATN.map(c =>
+    + (trendMode === "inc"
+        ? [...new Set(data.flatMap(d => Object.keys(d.bc)))]
+        : CATN).map(c =>
     `<span style="display:inline-flex;align-items:center;gap:4px;margin:0 8px 5px 0;font-size:10.5px">
-      <b style="width:11px;height:11px;border-radius:3px;background:${CATC[c]};display:inline-block"></b>${esc(c)}</span>`).join("");
+      <b style="width:11px;height:11px;border-radius:3px;background:${colOf(c)};display:inline-block"></b>${esc(c)}</span>`).join("");
 
-  // 費目別ミニ推移
+  // 費目別ミニ推移（収入のときは費目の考えが合わないので隠す）
+  const oneCard = $("trendCat").closest(".card");
+  if (oneCard) oneCard.style.display = trendMode === "inc" ? "none" : "block";
   const sel = $("trendCat");
   if (!sel.options.length) { sel.innerHTML = CATN.map(c => `<option>${esc(c)}</option>`).join(""); }
   const c = sel.value || CATN[0];
@@ -1859,8 +2024,6 @@ function txRow(t, compact) {
 }
 function renderList() {
   const tx = txOfMonth(curYm);
-  const isSp = autoSpecial(tx, curYm);
-  tx.forEach(t => { if (S.special[t.id] === undefined) t.sp = isSp(t); });
   const fc = $("fCat").value, fw = $("fWho").value, kw = $("fKw").value.trim(),
         fu = $("fUse").value;
   const f = tx.filter(t => (!fc || t.cat === fc) && (!fw || t.who === fw)
@@ -1901,20 +2064,63 @@ function drawSelBar(f) {
   bar.innerHTML = `<div class="in">
     <div style="font-size:12.5px;font-weight:800">${picked.length}件えらび中 ・ ${yen(sum(picked))}円</div>
     <div class="r">
-      <button class="btn sm" id="sbExp" style="width:100%"${picked.length ? "" : " disabled"}>会社立替にする</button>
+      <button class="btn sm" id="sbCat" style="width:100%"${picked.length ? "" : " disabled"}>費目をかえる</button>
+      <button class="btn sub sm" id="sbExp" style="width:100%"${picked.length ? "" : " disabled"}>会社立替に</button>
+    </div>
+    <div class="r">
       <button class="btn sub sm" id="sbHome" style="width:100%"${picked.length ? "" : " disabled"}>家計にもどす</button>
+      <button class="btn sub sm" id="sbDel" style="width:100%;color:#C4384F"${picked.length ? "" : " disabled"}>消す</button>
     </div>
     <div class="r">
       <button class="btn sub sm" id="sbAll" style="width:100%">表示中をぜんぶ選ぶ</button>
       <button class="btn sub sm" id="sbEnd" style="width:100%">やめる</button>
     </div></div>`;
+  $("sbCat").onclick = () => openBulkCat(picked);
   $("sbExp").onclick = () => { picked.forEach(t => S.exp[t.id] = true); afterBulk("会社立替にしました"); };
-  $("sbHome").onclick = () => { picked.forEach(t => S.exp[t.id] = false); afterBulk("家計にもどしました"); };
+  $("sbHome").onclick = () => {
+    picked.forEach(t => {
+      if (t.src === "bank") S.bankSkip[t.id] = false; else S.exp[t.id] = false;
+    });
+    afterBulk("家計にもどしました");
+  };
+  $("sbDel").onclick = () => {
+    if (!confirm(`${picked.length}件を消します。\n\n合計 ${yen(sum(picked))}円\n\nあとで「消したものを戻す」から戻せます。`)) return;
+    picked.forEach(t => S.hidden[t.id] = true);
+    afterBulk(`${picked.length}件を消しました`);
+  };
   $("sbAll").onclick = () => { f.forEach(t => selSet.add(t.id)); renderList(); };
   $("sbEnd").onclick = () => { selMode = false; selSet.clear(); $("selBtn").textContent = "まとめて選ぶ"; renderAll(); };
 }
+
+/* えらんだ明細の費目を、まとめてかえる */
+function openBulkCat(picked) {
+  if (!picked.length) return;
+  $("sheetBody").innerHTML = `
+    <div class="hd">えらんだ ${picked.length}件の費目をかえる
+      <small>合計 ${yen(sum(picked))}円 ／ うつす先をえらんでください</small></div>
+    <div class="cgrid">${CATN.map(c => `<button class="cbtn" data-c="${esc(c)}">
+      <b style="background:${CATC[c]}"></b>${esc(c)}</button>`).join("")}</div>
+    <div class="mini" style="margin-top:6px">
+      カードのお店は、次からもその費目になるように覚えます。</div>
+    <button class="btn sub" id="bcCancel" style="margin-top:12px">やめる</button>`;
+  $("sheetBody").querySelectorAll("[data-c]").forEach(b => b.onclick = () => {
+    const nc = b.dataset.c;
+    let learned = 0;
+    picked.forEach(t => {
+      if (t.src === "card") { S.rules[mkey(t.name)] = nc; learned++; }
+      else if (t.src === "cash") { const c = S.cash.find(c => "c:" + c.id === t.id); if (c) c.cat = nc; }
+      else if (t.src === "fixed") { const f = S.fixed.find(f => f.id === t.id.split(":")[1]); if (f) f.cat = nc; }
+      else if (t.src === "bank") { S.rules["bank:" + t.name] = nc; }
+    });
+    selSet.clear(); save(); closeSheet(); renderAll(); renderRules();
+    toast(`${picked.length}件を${nc}にしました`);
+  });
+  $("bcCancel").onclick = closeSheet;
+  $("sheet").classList.add("on"); $("ovl").classList.add("on");
+}
+
 function afterBulk(msg) {
-  selSet.clear(); save(); renderAll(); toast(msg);
+  selSet.clear(); save(); renderAll(); renderHidden(); toast(msg);
 }
 function closeSheet() {
   $("sheet").classList.remove("on"); $("ovl").classList.remove("on");
@@ -1946,7 +2152,11 @@ function openEdit(id, tx) {
     ${t.src === "card" ? `<div class="srow"><div class="t">このお店はいつも会社立替
       <small>${esc(k)} を今後ぜんぶ立替にします</small></div>
       <label class="tg"><input type="checkbox" id="shER"${alwaysExp ? " checked" : ""}><i></i></label></div>` : ""}
-    <button class="btn sub" id="shClose" style="margin-top:14px">とじる</button>`;
+    <div class="row2" style="margin-top:14px">
+      <button class="btn sub" id="shFind" style="width:100%">このお店を調べる</button>
+      <button class="btn sub" id="shDel" style="width:100%;color:#C4384F">この明細を消す</button>
+    </div>
+    <button class="btn sub" id="shClose" style="margin-top:8px">とじる</button>`;
 
   $("sheet").classList.add("on"); $("ovl").classList.add("on");
 
@@ -1978,7 +2188,26 @@ function openEdit(id, tx) {
     save(); renderAll();
     toast(e.target.checked ? `「${k}」は今後いつも立替にします` : "自動立替をやめました");
   };
+  $("shFind").onclick = () => searchShop(t.name);
+  $("shDel").onclick = () => {
+    if (!confirm(`「${t.name}」${yen(t.amt)}円 を消します。\n\nあとで⚙️設定の「消したものを戻す」から戻せます。`)) return;
+    S.hidden[t.id] = true; save(); closeSheet(); renderAll(); renderHidden(); toast("消しました");
+  };
   $("shClose").onclick = closeSheet;
+}
+
+/* 「これ何だっけ？」を調べる。
+   明細の店名は略されていることが多いので、余計な記号を取ってから渡す。 */
+function searchShop(name) {
+  const q = String(name || "")
+    .replace(/利用国[A-Z]{2}/g, "")
+    .replace(/[\/]NFC$/i, "")
+    .replace(/^楽天ＳＰ[　\s]*/, "")
+    .replace(/^ＶＩＳＡ国内利用[　\s]*ＶＳ/, "")
+    .replace(/[0-9]{4,}/g, "")
+    .trim();
+  if (!q) { toast("調べられる名前がありません"); return; }
+  window.open("https://www.google.com/search?q=" + encodeURIComponent(q + " 店"), "_blank", "noopener");
 }
 
 /* ---- 現金 ---- */
@@ -2031,6 +2260,36 @@ function renderFixed() {
   });
 }
 
+/* ---- 銀行明細の種類ごとの数えかた ---- */
+const BANK_KINDS = [
+  ["creditcard", "クレジットカードの引落し", "カード明細で1件ずつ数えているので、ふつうはOFFのまま"],
+  ["atm", "ATMでの引き出し", "使いみちは「入力」タブの現金で記録するので、ふつうはOFFのまま"],
+  ["emoney", "電子マネーへのチャージ", "PayPayなど。使った先が分からないぶん、ONにすると支出として数えます"],
+  ["tax", "税金・社会保険", "家計調査のめやすには入らない支出です"]
+];
+function renderBankKinds() {
+  const box = $("bankKindBox"); if (!box) return;
+  const cnt = {};
+  Object.keys(S.bank).forEach(ym => bankCardsOf(ym).forEach(t => {
+    cnt[t.bankKind] = (cnt[t.bankKind] || 0) + t.amt;
+  }));
+  box.innerHTML = BANK_KINDS.map(([k, name, memo]) => `
+    <div class="srow"><div class="t">${esc(name)}
+      <small>${esc(memo)}${cnt[k] ? " ／ ぜんぶで " + yen(cnt[k]) + "円" : ""}</small></div>
+      <label class="tg"><input type="checkbox" data-bk="${k}"${S.bankInclude[k] ? " checked" : ""}><i></i></label>
+    </div>`).join("");
+  box.querySelectorAll("[data-bk]").forEach(cb => cb.onchange = () => {
+    const k = cb.dataset.bk;
+    if (cb.checked) S.bankInclude[k] = true; else delete S.bankInclude[k];
+    // 1件ずつ手で変えたぶんは、種類の設定より優先されるので解いておく
+    Object.keys(S.bank).forEach(ym => bankCardsOf(ym).forEach(t => {
+      if (t.bankKind === k) delete S.bankSkip[t.id];
+    }));
+    save(); renderAll(); renderBankKinds();
+    toast(cb.checked ? "家計に数えるようにしました" : "家計から外しました");
+  });
+}
+
 /* ---- バックアップの状態 ---- */
 async function renderBackupState() {
   const box = $("backupState"); if (!box) return;
@@ -2061,14 +2320,49 @@ async function renderBackupState() {
 /* ---- ルール一覧 ---- */
 function renderRules() {
   const ks = Object.keys(S.rules);
-  $("ruleList").innerHTML = ks.length ? ks.map(k =>
-    `<div class="frow"><div class="mid"><div class="nm" style="font-size:12.5px">${esc(k)}</div></div>
-      <div class="mt"><span class="tag">${esc(S.rules[k])}</span></div>
-      <button class="btn sub sm" data-rdel="${esc(k)}" style="padding:6px 9px">✕</button></div>`).join("")
-    : '<div class="mini" style="padding:8px 0">まだありません</div>';
+  $("ruleList").innerHTML = ks.length ? ks.map(k => {
+    const isBank = k.indexOf("bank:") === 0;
+    const name = isBank ? k.slice(5) : k;
+    return `<div class="frow">
+      <div class="cc" style="width:9px;height:30px;border-radius:99px;background:${CATC[S.rules[k]] || "#ccc"}"></div>
+      <div class="mid"><div class="nm" style="font-size:12.5px">${esc(name)}</div>
+        <div class="mt">${isBank ? "銀行明細" : "カード明細"}</div></div>
+      <button class="btn sub sm" data-redit="${esc(k)}" style="padding:6px 10px">${esc(S.rules[k])}</button>
+      <button class="btn sub sm" data-rdel="${esc(k)}" style="padding:6px 9px">✕</button></div>`;
+  }).join("") : '<div class="mini" style="padding:8px 0">まだありません</div>';
+
+  $("ruleList").querySelectorAll("[data-redit]").forEach(b => b.onclick = () => {
+    const k = b.dataset.redit;
+    const nm = k.indexOf("bank:") === 0 ? k.slice(5) : k;
+    $("sheetBody").innerHTML = `
+      <div class="hd">${esc(nm)}<small>この名前のものを、どの費目にしますか</small></div>
+      <div class="cgrid">${CATN.map(c => `<button class="cbtn${c === S.rules[k] ? " on" : ""}" data-c="${esc(c)}">
+        <b style="background:${CATC[c]}"></b>${esc(c)}</button>`).join("")}</div>
+      <button class="btn sub" id="reClose" style="margin-top:12px">とじる</button>`;
+    $("sheetBody").querySelectorAll("[data-c]").forEach(x => x.onclick = () => {
+      S.rules[k] = x.dataset.c; save(); closeSheet(); renderAll(); renderRules();
+      toast(`${nm} を ${x.dataset.c} にしました`);
+    });
+    $("reClose").onclick = closeSheet;
+    $("sheet").classList.add("on"); $("ovl").classList.add("on");
+  });
   $("ruleList").querySelectorAll("[data-rdel]").forEach(b => b.onclick = () => {
     delete S.rules[b.dataset.rdel]; save(); renderAll(); renderRules();
+    toast("このルールをやめました");
   });
+}
+
+/* ---- 消した明細を戻す ---- */
+function renderHidden() {
+  const box = $("hiddenBox"); if (!box) return;
+  const ids = Object.keys(S.hidden);
+  if (!ids.length) { box.innerHTML = '<div class="mini">消した明細はありません。</div>'; return; }
+  box.innerHTML = `<div class="mini" style="margin-bottom:8px">${ids.length}件を消しています。</div>
+    <button class="btn sub sm" id="hidBack" style="width:100%">ぜんぶ戻す</button>`;
+  $("hidBack").onclick = () => {
+    if (!confirm(`${ids.length}件を戻します。よろしいですか？`)) return;
+    S.hidden = {}; save(); renderAll(); renderHidden(); toast("戻しました");
+  };
 }
 
 /* ---- ベンチマーク編集 ---- */
@@ -2160,7 +2454,11 @@ async function runAI() {
    9. 保存・入出力
    ========================================================= */
 let saveT = null;
-function save() { clearTimeout(saveT); saveT = setTimeout(() => Store.save(S), 200); }
+function save() {
+  clearCache();                       // 中身が変わったので組み立て直す
+  clearTimeout(saveT);
+  saveT = setTimeout(() => Store.save(S), 200);
+}
 
 function exportJSON() {
   // 書き出した日を先に記録してから写しを作る。
@@ -2189,6 +2487,7 @@ function exportJSON() {
    10. 起動
    ========================================================= */
 function go(p) {
+  if (p === "set") { renderHidden(); renderRules(); renderBankKinds(); }
   document.querySelectorAll("section.page").forEach(s => s.classList.toggle("on", s.id === "p-" + p));
   document.querySelectorAll("nav.tabs button").forEach(b => b.classList.toggle("on", b.dataset.p === p));
   window.scrollTo({ top: 0, behavior: "smooth" });
@@ -2268,11 +2567,35 @@ async function boot() {
   migrateIds();
   const fixedN = migrateTwoLine();
   fillCatSelects();
-  const ms = allMonths(); curYm = ms[ms.length - 1];
+  const ms = allMonths();
+  curYm = (S.lastYm && ms.indexOf(S.lastYm) >= 0) ? S.lastYm : ms[ms.length - 1];
 
   $("pv").onclick = () => { curYm = ymAdd(curYm, -1); selDay = null; renderAll(); };
   $("nx").onclick = () => { curYm = ymAdd(curYm, 1); selDay = null; renderAll(); };
   $("todayBtn").onclick = () => { curYm = thisYm(); selDay = null; renderAll(); };
+
+  // カレンダーの 支出／収入
+  $("calSeg").querySelectorAll("[data-cm]").forEach(b => b.onclick = () => {
+    calMode = b.dataset.cm; selDay = null;
+    $("calSeg").querySelectorAll("button").forEach(x => x.classList.toggle("on", x === b));
+    renderCal(txOfMonth(curYm));
+  });
+  // 毎月のうごきの 支出／収入
+  $("trendSeg").querySelectorAll("[data-tm]").forEach(b => b.onclick = () => {
+    trendMode = b.dataset.tm;
+    $("trendSeg").querySelectorAll("button").forEach(x => x.classList.toggle("on", x === b));
+    renderTrend();
+  });
+  // ホームから、同じ月の明細へ
+  document.querySelectorAll("[data-jump]").forEach(b => b.onclick = e => {
+    e.stopPropagation();
+    $("fCat").value = ""; $("fWho").value = ""; $("fKw").value = ""; $("fUse").value = "";
+    go("list"); renderList();
+  });
+  $("heroJump").onclick = () => {
+    $("fCat").value = ""; $("fWho").value = ""; $("fKw").value = ""; $("fUse").value = "";
+    go("list"); renderList();
+  };
   $("ovl").onclick = closeSheet;
   document.querySelectorAll("nav.tabs button").forEach(b => b.onclick = () => go(b.dataset.p));
 
@@ -2404,6 +2727,11 @@ async function boot() {
   // フィルタ
   ["fCat", "fWho", "fUse"].forEach(id => $(id).onchange = renderList);
   $("fKw").oninput = renderList;
+  $("findBtn").onclick = () => {
+    const q = $("fKw").value.trim();
+    if (!q) { toast("上の欄にお店の名前を入れてください"); return; }
+    searchShop(q);
+  };
   $("selBtn").onclick = () => {
     selMode = !selMode; selSet.clear();
     $("selBtn").textContent = selMode ? "選ぶのをやめる" : "まとめて選ぶ";
@@ -2503,7 +2831,7 @@ async function boot() {
     }
   };
 
-  renderBench(); renderRules(); renderAll();
+  renderBench(); renderRules(); renderBankKinds(); renderHidden(); renderAll();
 
   // 保存データを消されにくくする申請（結果を待たずに画面は出す）
   askPersist().then(renderBackupState);
