@@ -873,7 +873,8 @@ const S = {
   bankInclude: {},      // 種類ごとに「家計に数える」かどうか creditcard/atm/emoney/tax
   lastYm: "",           // さいごに見ていた月（開き直しても同じ月を出す）
   homeOpen: {},         // ホームの折りたためるカードの開き具合
-  hidden: {}            // 消した明細（取り込み直しても出てこないように覚えておく）
+  hidden: {},           // 消した明細（取り込み直しても出てこないように覚えておく）
+  catOv: {}             // txid -> cat  この1件だけの費目。お店のルールより強い。
 };
 let curYm = null, selDay = null;
 
@@ -1235,6 +1236,9 @@ function txOfMonth(ym) {
   }));
   bankCardsOf(ym).forEach(t => out.push(t));   // 銀行は常にカレンダー月（実際の取引日）で一致させる
   out.forEach(t => {
+    // この1件だけ手で直した費目は、お店のルールより優先する。
+    // （同じお店でも中身がちがうことがあるため）
+    if (S.catOv[t.id]) t.cat = S.catOv[t.id];
     t.sp = !!S.special[t.id];
     if (t.src !== "bank") {
       t.exp = (S.exp[t.id] !== undefined) ? !!S.exp[t.id]
@@ -2136,6 +2140,9 @@ function openBulkCat(picked) {
     const nc = b.dataset.c;
     let learned = 0;
     picked.forEach(t => {
+      // えらんだ行は必ずその費目になるよう、1件ずつの上書きも入れる。
+      // （前に1件だけ直した行が、ここで動かないままになるのを防ぐ）
+      S.catOv[t.id] = nc;
       if (t.src === "card") { S.rules[mkey(t.name)] = nc; learned++; }
       else if (t.src === "cash") { const c = S.cash.find(c => "c:" + c.id === t.id); if (c) c.cat = nc; }
       else if (t.src === "fixed") { const f = S.fixed.find(f => f.id === t.id.split(":")[1]); if (f) f.cat = nc; }
@@ -2166,6 +2173,9 @@ function openEdit(id, tx) {
   const t = tx.find(x => x.id === id); if (!t) return;
   const k = t.src === "card" ? mkey(t.name) : "";
   const alwaysExp = k && !!S.expRules[k];
+  // 同じ名前のものをまとめて覚えられるのは、カードと銀行だけ。
+  // 現金・固定費は1件ずつの記録なので、そもそも1件だけの変更になる。
+  const shop = t.src === "card" ? k : t.src === "bank" ? t.name : "";
   $("sheetBody").innerHTML = `
     <div class="hd">${esc(t.name || "(名称なし)")}
       <small>${t.d.slice(5).replace("-", "/")} ・ ${yen(t.amt)}円
@@ -2173,8 +2183,9 @@ function openEdit(id, tx) {
     <div class="mini" style="margin-top:11px">費目をえらぶ</div>
     <div class="cgrid">${CATN.map(c => `<button class="cbtn${c === t.cat ? " on" : ""}" data-c="${esc(c)}">
       <b style="background:${CATC[c]}"></b>${esc(c)}</button>`).join("")}</div>
-    ${t.src === "card" ? `<div class="mini" style="margin-bottom:4px">
-      えらぶと「${esc(k)}」は次からもその費目になります</div>` : ""}
+    ${shop ? `<div class="srow" style="margin-top:4px"><div class="t">この1件だけ変える
+        <small>OFFなら「${esc(shop)}」を次からもその費目にします</small></div>
+      <label class="tg"><input type="checkbox" id="shOne"${S.catOv[t.id] ? " checked" : ""}><i></i></label></div>` : ""}
     ${t.src === "bank" && t.bankLabel ? `<div class="mini" style="margin-bottom:4px">自動判定: ${esc(t.bankLabel)}</div>` : ""}
     <div class="srow"><div class="t">特別費にする
       <small>旅行・家電など、いつもは起きない大きな出費</small></div>
@@ -2197,11 +2208,24 @@ function openEdit(id, tx) {
 
   openSheet();
 
+  /* 費目は何度でも、どの明細でも変えられるようにする。
+     ・この1件だけ  → S.catOv に入れる（お店のルールより強い）
+     ・お店ごと      → ルールに入れ、この1件の上書きは外す
+     現金と固定費は記録そのものを書きかえる。                     */
   $("sheetBody").querySelectorAll("[data-c]").forEach(b => b.onclick = () => {
     const nc = b.dataset.c;
-    if (t.src === "card") { S.rules[k] = nc; toast(`「${k}」を${nc}にしました`); }
-    else if (t.src === "cash") { const c = S.cash.find(c => "c:" + c.id === t.id); if (c) c.cat = nc; toast(`${nc}にしました`); }
-    else if (t.src === "fixed") { const f = S.fixed.find(f => f.id === t.id.split(":")[1]); if (f) f.cat = nc; toast(`${nc}にしました`); }
+    const one = $("shOne") ? $("shOne").checked : true;
+    if (one) {
+      S.catOv[t.id] = nc;
+      if (t.src === "cash") { const c = S.cash.find(c => "c:" + c.id === t.id); if (c) c.cat = nc; }
+      if (t.src === "fixed") { const f = S.fixed.find(f => f.id === t.id.split(":")[1]); if (f) f.cat = nc; }
+      toast(`この1件を${nc}にしました`);
+    } else {
+      delete S.catOv[t.id];
+      if (t.src === "card") S.rules[k] = nc;
+      else if (t.src === "bank") S.rules["bank:" + t.name] = nc;
+      toast(`「${shop}」を${nc}にしました`);
+    }
     save(); closeSheet(); renderAll(); renderRules();
   });
   $("shSp").onchange = e => {
@@ -2600,6 +2624,7 @@ async function boot() {
       });
       S.incomeMonthly = true;
     }
+    if (!S.catOv) S.catOv = {};   // 古い保存データには無い
   }
   migrateIds();
   const fixedN = migrateTwoLine();
